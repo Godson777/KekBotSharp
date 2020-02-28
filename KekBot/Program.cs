@@ -27,7 +27,7 @@ namespace KekBot {
 
         static async Task MainAsync(string[] args) {
             discord = new DiscordClient(new DiscordConfiguration {
-                Token = "NDA2NTgzNzA2Njc4MDY3MjAw.Xlc4qw.1-O_isSYJpfcqIRCnddHSy3qqec",
+                Token = "MjgxOTM2OTQ2MjE5OTc0Njcw.XllvcQ.f6cCxFKmDn1-vMXMNE79u7wa4E8",
                 TokenType = TokenType.Bot,
                 LogLevel = LogLevel.Debug,
                 UseInternalLogHandler = true
@@ -45,20 +45,14 @@ namespace KekBot {
         }
 
         private static Task<int> ResolvePrefixAsync(DiscordMessage msg) {
-            DiscordGuild guild = msg.Channel.Guild;
-            if (guild == null) return Task.FromResult(-1);
+            var guildId = msg.Channel.GuildId;
+            if (guildId == 0) return Task.FromResult(-1);
 
-            ulong guildID = guild.Id;
-            string prefix;
-            if (PrefixSettings.TryGetValue(msg.Channel.GuildId, out prefix)) {
-                int p = msg.GetStringPrefixLength(prefix);
-                if (p != -1) return Task.FromResult(p);
-            } else {
-                int p = msg.GetStringPrefixLength("p$");
-                if (p != -1) return Task.FromResult(p);
-            }
+            var pLen = PrefixSettings.TryGetValue(guildId, out string prefix)
+                ? msg.GetStringPrefixLength(prefix)
+                : msg.GetStringPrefixLength("p$");
 
-            return Task.FromResult(-1);
+            return Task.FromResult(pLen);
         }
     }
 }
