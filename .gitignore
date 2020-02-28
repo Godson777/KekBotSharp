@@ -1,0 +1,12 @@
+target/
+out/
+log/
+.idea/
+modules/
+src/test/
+tickets.json
+profiles/
+profiles copy/
+config/
+/twitter4j.properties
+/kekbot.iml
