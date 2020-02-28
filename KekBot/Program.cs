@@ -53,18 +53,14 @@ namespace KekBot {
         }
 
         private static Task<int> ResolvePrefixAsync(DiscordMessage msg) {
-            DiscordGuild guild = msg.Channel.Guild;
-            if (guild == null) return Task.FromResult(-1);
+            var guildId = msg.Channel.GuildId;
+            if (guildId == 0) return Task.FromResult(-1);
 
-            if (PrefixSettings.TryGetValue(guild.Id, out string prefix)) {
-                int p = msg.GetStringPrefixLength(prefix);
-                if (p != -1) return Task.FromResult(p);
-            } else {
-                int p = msg.GetStringPrefixLength("p$");
-                if (p != -1) return Task.FromResult(p);
-            }
+            var pLen = PrefixSettings.TryGetValue(guildId, out string prefix)
+                ? msg.GetStringPrefixLength(prefix)
+                : msg.GetStringPrefixLength("p$");
 
-            return Task.FromResult(-1);
+            return Task.FromResult(pLen);
         }
     }
 
