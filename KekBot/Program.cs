@@ -27,7 +27,7 @@ namespace KekBot {
 
         static async Task MainAsync(string[] args) {
             discord = new DiscordClient(new DiscordConfiguration {
-                Token = "MjgxOTM2OTQ2MjE5OTc0Njcw.XllvcQ.f6cCxFKmDn1-vMXMNE79u7wa4E8",
+                Token = "NDA2NTgzNzA2Njc4MDY3MjAw.Xlc4qw.1-O_isSYJpfcqIRCnddHSy3qqec",
                 TokenType = TokenType.Bot,
                 LogLevel = LogLevel.Debug,
                 UseInternalLogHandler = true
