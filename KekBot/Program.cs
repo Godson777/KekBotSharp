@@ -8,6 +8,7 @@ using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using ImageMagick;
+using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -26,8 +27,15 @@ namespace KekBot {
         }
 
         static async Task MainAsync(string[] args) {
+            //load config
+            var json = "";
+            using (FileStream fs = File.OpenRead("config/config.json"))
+            using (StreamReader sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync();
+
+            Config config = JsonConvert.DeserializeObject<Config>(json);
             discord = new DiscordClient(new DiscordConfiguration {
-                Token = "NDA2NTgzNzA2Njc4MDY3MjAw.Xlc4qw.1-O_isSYJpfcqIRCnddHSy3qqec",
+                Token = config.Token,
                 TokenType = TokenType.Bot,
                 LogLevel = LogLevel.Debug,
                 UseInternalLogHandler = true
@@ -48,9 +56,7 @@ namespace KekBot {
             DiscordGuild guild = msg.Channel.Guild;
             if (guild == null) return Task.FromResult(-1);
 
-            ulong guildID = guild.Id;
-            string prefix;
-            if (PrefixSettings.TryGetValue(msg.Channel.GuildId, out prefix)) {
+            if (PrefixSettings.TryGetValue(guild.Id, out string prefix)) {
                 int p = msg.GetStringPrefixLength(prefix);
                 if (p != -1) return Task.FromResult(p);
             } else {
@@ -60,5 +66,10 @@ namespace KekBot {
 
             return Task.FromResult(-1);
         }
+    }
+
+    public struct Config {
+        [JsonProperty("token")]
+        public string Token { get; private set; }
     }
 }
