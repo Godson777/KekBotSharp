@@ -1,18 +1,15 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.IO;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
-using ImageMagick;
 using Newtonsoft.Json;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using KekBot.ArgumentResolvers;
 
-namespace KekBot {
+namespace KekBot
+{
     class Program {
 
         static DiscordClient discord;
@@ -46,7 +43,11 @@ namespace KekBot {
                 PrefixResolver = ResolvePrefixAsync
             });
 
+            commands.RegisterConverter(new ChoicesConverter());
+            commands.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("choices");
+
             commands.RegisterCommands<TestCommand>();
+            commands.RegisterCommands<PickCommand>();
 
             await discord.ConnectAsync();
             await Task.Delay(-1);
