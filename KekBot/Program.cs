@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -43,14 +44,22 @@ namespace KekBot
                 PrefixResolver = ResolvePrefixAsync
             });
 
+            commands.CommandErrored += PrintError;
+
             commands.RegisterConverter(new ChoicesConverter());
-            commands.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("choices");
+            commands.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
 
             commands.RegisterCommands<TestCommand>();
             commands.RegisterCommands<PickCommand>();
 
             await discord.ConnectAsync();
             await Task.Delay(-1);
+        }
+
+        private async static Task PrintError(CommandErrorEventArgs e)
+        {
+            await e.Context.Channel.SendMessageAsync($"An error occured: {e.Exception.Message}");
+            Console.Error.WriteLine(e.Exception);
         }
 
         private static Task<int> ResolvePrefixAsync(DiscordMessage msg) {
