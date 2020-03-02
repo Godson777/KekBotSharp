@@ -16,9 +16,9 @@ namespace KekBot
         public async Task Pick(CommandContext ctx,
             [Description("Options separated with vertical bars, commas, or just spaces (for single-word choices).")]
             [RemainingText]
-            ChoicesList choices)
+            ChoicesList? choices = null)
         {
-            var choicesArray = choices.Choices;
+            var choicesArray = choices?.Choices ?? new string[] { };
 
             Debug.Assert(choicesArray.Length >= 0, "negative length?");
 
@@ -30,15 +30,10 @@ namespace KekBot
             });
         }
 
-        [Command("pick")]
-        [Priority(1)]
-        public Task Pick(CommandContext ctx) => Pick(ctx, ChoicesList.Empty());
-
         public struct ChoicesList
         {
             public readonly string[] Choices;
             public ChoicesList(string[] choices) => Choices = choices;
-            public static ChoicesList Empty() => new ChoicesList(new string[] { });
         }
     }
 }
