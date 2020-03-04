@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace KekBot {
     public class TestCommand : BaseCommandModule {
-        [Command("test"), Description("example test command"), Aliases("pong")]
+        [Command("test"), Description("example test command")]
         public async Task Test(CommandContext ctx) {
             await ctx.TriggerTypingAsync();
 
