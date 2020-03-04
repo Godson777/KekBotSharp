@@ -13,8 +13,8 @@ namespace KekBot
 {
     class Program {
 
-        static DiscordClient discord;
-        static CommandsNextExtension commands;
+        static DiscordClient? discord;
+        static CommandsNextExtension? commands;
         static ConcurrentDictionary<ulong, string> PrefixSettings = new ConcurrentDictionary<ulong, string>();
 
 
@@ -67,7 +67,7 @@ namespace KekBot
             var guildId = msg.Channel.GuildId;
             if (guildId == 0) return Task.FromResult(-1);
 
-            var pLen = PrefixSettings.TryGetValue(guildId, out string prefix)
+            var pLen = PrefixSettings.TryGetValue(guildId, out string? prefix) && prefix != null
                 ? msg.GetStringPrefixLength(prefix)
                 : msg.GetStringPrefixLength("p$");
 
