@@ -51,6 +51,7 @@ namespace KekBot
 
             commands.RegisterCommands<TestCommand>();
             commands.RegisterCommands<PickCommand>();
+            commands.RegisterCommands<PingCommand>();
 
             await discord.ConnectAsync();
             await Task.Delay(-1);
