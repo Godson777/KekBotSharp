@@ -1,18 +1,16 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
-using ImageMagick;
 using Newtonsoft.Json;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using KekBot.ArgumentResolvers;
 
-namespace KekBot {
+namespace KekBot
+{
     class Program {
 
         static DiscordClient? discord;
@@ -46,10 +44,23 @@ namespace KekBot {
                 PrefixResolver = ResolvePrefixAsync
             });
 
+            commands.CommandErrored += PrintError;
+
+            commands.RegisterConverter(new ChoicesConverter());
+            commands.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
+
             commands.RegisterCommands<TestCommand>();
+            commands.RegisterCommands<PickCommand>();
+            commands.RegisterCommands<PingCommand>();
 
             await discord.ConnectAsync();
             await Task.Delay(-1);
+        }
+
+        private async static Task PrintError(CommandErrorEventArgs e)
+        {
+            await e.Context.Channel.SendMessageAsync($"An error occured: {e.Exception.Message}");
+            Console.Error.WriteLine(e.Exception);
         }
 
         private static Task<int> ResolvePrefixAsync(DiscordMessage msg) {
