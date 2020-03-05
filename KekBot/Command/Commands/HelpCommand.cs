@@ -16,17 +16,17 @@ namespace KekBot.Command.Commands
 
     class HelpCommand : BaseCommandModule
     {
-        static readonly string tagline = "KekBot, your friendly meme based bot!";
+        private const string tagline = "KekBot, your friendly meme based bot!";
 
         [Command("help"), Description("You're already here, aren't you?"), Category(Category.General)]
-        public async Task help(CommandContext ctx, [RemainingText, Description("The command or category to look for.")] string query = "")
+        public async Task Help(CommandContext ctx, [RemainingText, Description("The command or category to look for.")] string query = "")
         {
             //If no arguments were given, bring the commands list.
             if (query.Length == 0)
             {
                 var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
-                paginator.finalAction = async m => await m.DeleteAllReactionsAsync();
-                paginator.showPageNumbers = true;
+                paginator.FinalAction = async m => await m.DeleteAllReactionsAsync();
+                paginator.ShowPageNumbers = true;
                 paginator.users.Add(ctx.Member.Id);
 
                 var cats = Enum.GetValues(typeof(Category)).Cast<Category>();
@@ -49,7 +49,7 @@ namespace KekBot.Command.Commands
                 {
                     var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
                     paginator.users.Add(ctx.Member.Id);
-                    paginator.showPageNumbers = true;
+                    paginator.ShowPageNumbers = true;
 
                     var cat = (Category)Enum.Parse(typeof(Category), query, true);
                     PrintCommandsInCategory(ctx, paginator, cat);
@@ -176,7 +176,7 @@ namespace KekBot.Command.Commands
                 builder.Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"));
                 builder.WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
                 builder.WithFooter("KekBot v2.0");
-                paginator.embeds.Add(builder.Build());
+                paginator.Embeds.Add(builder.Build());
             }
         }
     }
