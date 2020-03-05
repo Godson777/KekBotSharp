@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace KekBot.Util
-{
-    static class Util
-    {
+namespace KekBot.Util {
+    static class Util {
 
         public static readonly System.Random Rng = new System.Random();
 
