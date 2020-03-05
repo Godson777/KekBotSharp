@@ -1,15 +1,14 @@
-﻿using DSharpPlus.CommandsNext;
+﻿using System;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using KekBot.Attributes;
 using KekBot.Menu;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KekBot.Command.Commands
 {
@@ -24,9 +23,11 @@ namespace KekBot.Command.Commands
             //If no arguments were given, bring the commands list.
             if (query.Length == 0)
             {
-                var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
-                paginator.FinalAction = async m => await m.DeleteAllReactionsAsync();
-                paginator.ShowPageNumbers = true;
+                var paginator = new EmbedPaginator(ctx.Client.GetInteractivity())
+                {
+                    FinalAction = async m => await m.DeleteAllReactionsAsync(),
+                    ShowPageNumbers = true
+                };
                 paginator.users.Add(ctx.Member.Id);
 
                 var cats = Enum.GetValues(typeof(Category)).Cast<Category>();
@@ -45,13 +46,12 @@ namespace KekBot.Command.Commands
             //Was the command found?
             if (cmd == null)
             {
-                if (Enum.GetNames(typeof(Category)).Select(s => s.ToLower()).Contains(query.ToLower()))
+                if (Enum.TryParse(query, true, out Category cat))
                 {
                     var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
                     paginator.users.Add(ctx.Member.Id);
                     paginator.ShowPageNumbers = true;
 
-                    var cat = (Category)Enum.Parse(typeof(Category), query, true);
                     PrintCommandsInCategory(ctx, paginator, cat);
                     await paginator.Display(ctx.Channel);
                 }
@@ -62,7 +62,32 @@ namespace KekBot.Command.Commands
                 return;
             }
 
+            await PrintCommandHelp(ctx, cmd);
+        }
 
+        private static void PrintCommandsInCategory(CommandContext ctx, EmbedPaginator paginator, Category cat)
+        {
+            var cmds = ctx.CommandsNext.RegisteredCommands.Values
+                .Where(c => c.GetCategory() == cat)
+                .OrderBy(c => c.Name)
+                .Distinct();
+            for (int i = 0; i < cmds.Count(); i += 10)
+            {
+                var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
+                DiscordEmbedBuilder builder = new DiscordEmbedBuilder
+                {
+                    Title = Enum.GetName(typeof(Category), cat),
+                    Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"))
+                };
+                builder
+                    .WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl)
+                    .WithFooter("KekBot v2.0");
+                paginator.Embeds.Add(builder.Build());
+            }
+        }
+
+        private static async Task PrintCommandHelp(CommandContext ctx, DSharpPlus.CommandsNext.Command cmd)
+        {
             //Setup the embed.
             var embed = new DiscordEmbedBuilder();
             embed.WithAuthor(tagline, null, ctx.Client.CurrentUser.AvatarUrl);
@@ -71,7 +96,7 @@ namespace KekBot.Command.Commands
             var aliases = new StringBuilder();
             for (int i = 0; i < cmd.Aliases.Count; i++)
             {
-                string alias = (string)cmd.Aliases[i];
+                string alias = cmd.Aliases[i];
                 aliases.Append($"`{alias}`");
                 if (i < cmd.Aliases.Count - 1) aliases.Append(", ");
             }
@@ -83,9 +108,8 @@ namespace KekBot.Command.Commands
             var count = cmd.Overloads.Count;
 
             //Do we have any subcommands?
-            if (cmd is CommandGroup)
+            if (cmd is CommandGroup g)
             {
-                var g = cmd as CommandGroup;
                 count += g.Children.Count;
                 //The following loop handles subcommands and their appropriate usage.
                 foreach (var subcmd in g.Children)
@@ -163,21 +187,6 @@ namespace KekBot.Command.Commands
             }
             embed.AddField("Usage:", usage.ToString(), false);
             await ctx.RespondAsync(embed: embed);
-        }
-
-        private static void PrintCommandsInCategory(CommandContext ctx, EmbedPaginator paginator, Category cat)
-        {
-            var cmds = ctx.CommandsNext.RegisteredCommands.Values.Where(c => c.GetCategory().Equals(cat)).OrderBy(c => c.Name).Distinct();
-            for (int i = 0; i < cmds.Count(); i += 10)
-            {
-                var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
-                DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
-                builder.Title = Enum.GetName(typeof(Category), cat);
-                builder.Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"));
-                builder.WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
-                builder.WithFooter("KekBot v2.0");
-                paginator.Embeds.Add(builder.Build());
-            }
         }
     }
 }
