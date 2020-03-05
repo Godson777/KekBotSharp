@@ -1,39 +1,46 @@
-﻿using DSharpPlus.CommandsNext;
+﻿using System;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using KekBot.Attributes;
 using KekBot.Menu;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace KekBot.Command.Commands {
-
+namespace KekBot.Command.Commands
+{
     class HelpCommand : BaseCommandModule {
-        static readonly string tagline = "KekBot, your friendly meme based bot!";
+
+        private const string tagline = "KekBot, your friendly meme based bot!";
 
         [Command("help"), Description("You're already here, aren't you?"), Category(Category.General), Priority(1)]
-        public async Task help(CommandContext ctx) {
-            var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
-            paginator.finalAction = async m => await m.DeleteAllReactionsAsync();
-            paginator.showPageNumbers = true;
+        public async Task Help(CommandContext ctx) {
+            var paginator = new EmbedPaginator(ctx.Client.GetInteractivity())
+            {
+                FinalAction = async m => await m.DeleteAllReactionsAsync(),
+                ShowPageNumbers = true
+            };
             paginator.users.Add(ctx.Member.Id);
 
             var cats = Enum.GetValues(typeof(Category)).Cast<Category>();
             foreach (var cat in cats) {
-                var cmds = ctx.CommandsNext.RegisteredCommands.Values.Where(c => c.GetCategory().Equals(cat)).OrderBy(c => c.Name).Distinct();
+                var cmds = ctx.CommandsNext.RegisteredCommands.Values
+                    .Where(cmd => cmd.GetCategory() == cat)
+                    .OrderBy(cmd => cmd.Name)
+                    .Distinct();
                 for (int i = 0; i < cmds.Count(); i += 10) {
                     var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
-                    DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
-                    builder.Title = Enum.GetName(typeof(Category), cat);
-                    builder.Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"));
-                    builder.WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
-                    builder.WithFooter("KekBot v2.0");
-                    paginator.embeds.Add(builder.Build());
+                    var builder = new DiscordEmbedBuilder
+                    {
+                        Title = Enum.GetName(typeof(Category), cat),
+                        Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"))
+                    }
+                        .WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl)
+                        .WithFooter("KekBot v2.0");
+                    paginator.Embeds.Add(builder.Build());
                 }
             }
 
@@ -41,7 +48,7 @@ namespace KekBot.Command.Commands {
         }
 
         [Command("help"), Priority(0)]
-        public async Task help(CommandContext ctx, [RemainingText, Description("The command or category to look for")] string query) {
+        public async Task Help(CommandContext ctx, [RemainingText, Description("The command or category to look for")] string query) {
             //Find the command
             var cmd = ctx.CommandsNext.FindCommand(query, out var args);
             //Was the command found?
@@ -57,7 +64,7 @@ namespace KekBot.Command.Commands {
             //Prepare ourselves in case the command has aliases
             var aliases = new StringBuilder();
             for (int i = 0; i < cmd.Aliases.Count; i++) {
-                string alias = (string)cmd.Aliases[i];
+                var alias = cmd.Aliases[i];
                 aliases.Append($"`{alias}`");
                 if (i < cmd.Aliases.Count - 1) aliases.Append(", ");
             }
@@ -69,8 +76,7 @@ namespace KekBot.Command.Commands {
             var count = cmd.Overloads.Count;
 
             //Do we have any subcommands?
-            if (cmd is CommandGroup) {
-                var g = cmd as CommandGroup;
+            if (cmd is CommandGroup g) {
                 count += g.Children.Count;
                 //The following loop handles subcommands and their appropriate usage.
                 foreach (var subcmd in g.Children) {
@@ -136,5 +142,6 @@ namespace KekBot.Command.Commands {
             embed.AddField("Usage:", usage.ToString(), false);
             await ctx.RespondAsync(embed: embed);
         }
+
     }
 }

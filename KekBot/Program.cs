@@ -26,7 +26,7 @@ namespace KekBot {
         }
 
         static async Task MainAsync(string[] args) {
-            Config config = await getConfig();
+            Config config = await GetConfig();
             discord = new DiscordClient(new DiscordConfiguration {
                 Token = config.Token,
                 TokenType = TokenType.Bot,
@@ -75,7 +75,7 @@ namespace KekBot {
             return Task.FromResult(pLen);
         }
 
-        public static async Task<Config> getConfig() {
+        public static async Task<Config> GetConfig() {
             //load config
             var json = "";
             using (FileStream fs = File.OpenRead("../../../../config/config.json"))
@@ -90,12 +90,12 @@ namespace KekBot {
         [JsonProperty("token")]
         public string Token { get; private set; }
         [JsonProperty("database")]
-        public string db { get; private set; }
+        public string Db { get; private set; }
         [JsonProperty("dbUser")]
-        public string dbUser { get; private set; }
+        public string DbUser { get; private set; }
         [JsonProperty("dbPassword")]
-        public string dbPass { get; private set; }
+        public string DbPass { get; private set; }
         [JsonProperty("botOwner")]
-        public ulong botOwner { get; private set; }
+        public ulong BotOwner { get; private set; }
     }
 }

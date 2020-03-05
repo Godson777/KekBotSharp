@@ -1,11 +1,13 @@
 ﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace KekBot {
     public class PingCommand : BaseCommandModule {
 
         [Command("ping"), Description("Returns with the bot's ping."), Aliases("pong")]
+        [SuppressMessage("Performance", "CA1822:Mark members as static")]
         public async Task Ping(CommandContext ctx) {
             var msg = await ctx.RespondAsync("Pinging...");
             var ping = msg.Timestamp - ctx.Message.Timestamp;
