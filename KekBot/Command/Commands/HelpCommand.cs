@@ -16,40 +16,63 @@ namespace KekBot.Command.Commands {
     class HelpCommand : BaseCommandModule {
         static readonly string tagline = "KekBot, your friendly meme based bot!";
 
-        [Command("help"), Description("You're already here, aren't you?"), Category(Category.General), Priority(1)]
-        public async Task help(CommandContext ctx) {
-            var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
-            paginator.finalAction = async m => await m.DeleteAllReactionsAsync();
-            paginator.showPageNumbers = true;
-            paginator.users.Add(ctx.Member.Id);
+        [Command("help"), Description("You're already here, aren't you?"), Category(Category.General)]
+        public async Task help(CommandContext ctx, [RemainingText, Description("The command or category to look for.")] string query = "") {
+            //If no arguments were given, bring the commands list.
+            if (query.Length == 0) {
+                var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
+                paginator.finalAction = async m => await m.DeleteAllReactionsAsync();
+                paginator.showPageNumbers = true;
+                paginator.users.Add(ctx.Member.Id);
 
-            var cats = Enum.GetValues(typeof(Category)).Cast<Category>();
-            foreach (var cat in cats) {
-                var cmds = ctx.CommandsNext.RegisteredCommands.Values.Where(c => c.GetCategory().Equals(cat)).OrderBy(c => c.Name).Distinct();
-                for (int i = 0; i < cmds.Count(); i += 10) {
-                    var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
-                    DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
-                    builder.Title = Enum.GetName(typeof(Category), cat);
-                    builder.Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"));
-                    builder.WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
-                    builder.WithFooter("KekBot v2.0");
-                    paginator.embeds.Add(builder.Build());
+                var cats = Enum.GetValues(typeof(Category)).Cast<Category>();
+                foreach (var cat in cats) {
+                    var cmds = ctx.CommandsNext.RegisteredCommands.Values.Where(c => c.GetCategory().Equals(cat)).OrderBy(c => c.Name).Distinct();
+                    for (int i = 0; i < cmds.Count(); i += 10) {
+                        var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
+                        DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
+                        builder.Title = Enum.GetName(typeof(Category), cat);
+                        builder.Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"));
+                        builder.WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
+                        builder.WithFooter("KekBot v2.0");
+                        paginator.embeds.Add(builder.Build());
+                    }
                 }
+
+                await paginator.Display(ctx.Channel);
+                return;
             }
 
-            await paginator.Display(ctx.Channel);
-        }
 
-        [Command("help"), Priority(0)]
-        public async Task help(CommandContext ctx, [RemainingText, Description("The command or category to look for")] string query) {
             //Find the command
             var cmd = ctx.CommandsNext.FindCommand(query, out var args);
             //Was the command found?
             if (cmd == null) {
-                //TODO: Implement searching commands by their category.
-                await ctx.RespondAsync("Command/Category not found.");
+                if (Enum.GetNames(typeof(Category)).Select(s => s.ToLower()).Contains(query.ToLower())) {
+                    var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
+                    paginator.users.Add(ctx.Member.Id);
+                    paginator.showPageNumbers = true;
+
+                    var cat = Enum.Parse(typeof(Category), query, true);
+                    var cmds = ctx.CommandsNext.RegisteredCommands.Values.Where(c => c.GetCategory().Equals(cat)).OrderBy(c => c.Name).Distinct();
+                    for (int i = 0; i < cmds.Count(); i += 10) {
+                        var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
+                        DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
+                        builder.Title = Enum.GetName(typeof(Category), cat);
+                        builder.Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"));
+                        builder.WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
+                        builder.WithFooter("KekBot v2.0");
+                        paginator.embeds.Add(builder.Build());
+
+                        await paginator.Display(ctx.Channel);
+                    }
+                } else {
+                    await ctx.RespondAsync("Command/Category not found.");
+                }
                 return;
             }
+
+
             //Setup the embed.
             var embed = new DiscordEmbedBuilder();
             embed.WithAuthor(tagline, null, ctx.Client.CurrentUser.AvatarUrl);
