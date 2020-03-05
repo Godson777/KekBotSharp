@@ -27,16 +27,7 @@ namespace KekBot.Command.Commands {
 
                 var cats = Enum.GetValues(typeof(Category)).Cast<Category>();
                 foreach (var cat in cats) {
-                    var cmds = ctx.CommandsNext.RegisteredCommands.Values.Where(c => c.GetCategory().Equals(cat)).OrderBy(c => c.Name).Distinct();
-                    for (int i = 0; i < cmds.Count(); i += 10) {
-                        var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
-                        DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
-                        builder.Title = Enum.GetName(typeof(Category), cat);
-                        builder.Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"));
-                        builder.WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
-                        builder.WithFooter("KekBot v2.0");
-                        paginator.embeds.Add(builder.Build());
-                    }
+                    PrintCommandsInCategory(ctx, paginator, cat);
                 }
 
                 await paginator.Display(ctx.Channel);
@@ -53,19 +44,9 @@ namespace KekBot.Command.Commands {
                     paginator.users.Add(ctx.Member.Id);
                     paginator.showPageNumbers = true;
 
-                    var cat = Enum.Parse(typeof(Category), query, true);
-                    var cmds = ctx.CommandsNext.RegisteredCommands.Values.Where(c => c.GetCategory().Equals(cat)).OrderBy(c => c.Name).Distinct();
-                    for (int i = 0; i < cmds.Count(); i += 10) {
-                        var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
-                        DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
-                        builder.Title = Enum.GetName(typeof(Category), cat);
-                        builder.Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"));
-                        builder.WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
-                        builder.WithFooter("KekBot v2.0");
-                        paginator.embeds.Add(builder.Build());
-
-                        await paginator.Display(ctx.Channel);
-                    }
+                    var cat = (Category) Enum.Parse(typeof(Category), query, true);
+                    PrintCommandsInCategory(ctx, paginator, cat);
+                    await paginator.Display(ctx.Channel);
                 } else {
                     await ctx.RespondAsync("Command/Category not found.");
                 }
@@ -158,6 +139,19 @@ namespace KekBot.Command.Commands {
             }
             embed.AddField("Usage:", usage.ToString(), false);
             await ctx.RespondAsync(embed: embed);
+        }
+
+        private static void PrintCommandsInCategory(CommandContext ctx, EmbedPaginator paginator, Category cat) {
+            var cmds = ctx.CommandsNext.RegisteredCommands.Values.Where(c => c.GetCategory().Equals(cat)).OrderBy(c => c.Name).Distinct();
+            for (int i = 0; i < cmds.Count(); i += 10) {
+                var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
+                DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
+                builder.Title = Enum.GetName(typeof(Category), cat);
+                builder.Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"));
+                builder.WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
+                builder.WithFooter("KekBot v2.0");
+                paginator.embeds.Add(builder.Build());
+            }
         }
     }
 }
