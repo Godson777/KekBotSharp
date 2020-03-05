@@ -13,7 +13,7 @@ namespace KekBot.Menu {
     public class EmbedPaginator : Menu {
 
         public DiscordColor Color { private get; set; }
-        public Action<DiscordMessage>? FinalAction { private get; set; }
+        public Action<DiscordMessage>? FinalAction { private get; set; } = async m => await m.DeleteAllReactionsAsync();
         public bool ShowPageNumbers { private get; set; }
         protected int Pages => Embeds.Count;
         public List<DiscordEmbed> Embeds { get; private set; } = new List<DiscordEmbed>();
@@ -97,15 +97,13 @@ namespace KekBot.Menu {
             foreach (DiscordEmbedField field in e.Fields) {
                 builder.AddField(field.Name, field.Value, field.Inline);
             }
-            if (e.Title != null) builder.Title = e.Title;
-            if (e.Description != null) builder.Description = e.Description;
+            builder.Title = e.Title ?? "";
+            builder.Description = e.Description;
             if (e.Color != null) builder.Color = e.Color;
             else builder.Color = Color;
-            if (e.Thumbnail != null) builder.ThumbnailUrl = e.Thumbnail.Url.ToString();
-            if (e.Thumbnail != null) builder.Timestamp = e.Timestamp;
-            if (e.Author != null) builder.WithAuthor(e.Author.Name != null ? e.Author.Name : null, 
-                e.Author.Url != null ? e.Author.Url.ToString() : null, 
-                e.Author.IconUrl != null ? e.Author.IconUrl.ToString() : null);
+            builder.ThumbnailUrl = e.Thumbnail?.Url?.ToString();
+            builder.Timestamp = e.Timestamp;
+            builder.WithAuthor(e.Author?.Name, e.Author?.Url?.ToString(), e.Author?.IconUrl?.ToString());
 
             if (ShowPageNumbers) builder.WithFooter($"Page {pageNum}/{Pages}" + (e.Footer != null ? $" | {e.Footer.Text}" : ""));
             else builder.WithFooter(e.Footer.Text);

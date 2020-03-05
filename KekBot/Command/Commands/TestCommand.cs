@@ -15,7 +15,7 @@ namespace KekBot {
     public class TestCommand : BaseCommandModule {
         [Command("test"), Description("example test command")]
         public async Task Test(CommandContext ctx) {
-            var pag = new Paginator(ctx.Client.GetInteractivity());
+            /*var pag = new Paginator(ctx.Client.GetInteractivity());
             for (int i = 0; i < 20; i++) {
                 pag.strings.Add($"test {i + 1}");
             }
@@ -24,11 +24,11 @@ namespace KekBot {
             pag.finalAction = async m => await m.DeleteAllReactionsAsync();
             pag.timeout = TimeSpan.FromSeconds(30);
 
-            await pag.Display(ctx.Channel);
+            await pag.Display(ctx.Channel);*/
             
             
             
-            /*var pag = new EmbedPaginator(ctx.Client.GetInteractivity());
+            var pag = new EmbedPaginator(ctx.Client.GetInteractivity());
             for (int i = 0; i < 5; i++) {
                 var builder = new DiscordEmbedBuilder();
                 builder.Title = $"{i}";
@@ -39,7 +39,7 @@ namespace KekBot {
             pag.timeout = TimeSpan.FromSeconds(30);
             pag.finalAction = async m => await m.DeleteAllReactionsAsync();
 
-            await pag.Display(ctx.Channel);*/
+            await pag.Display(ctx.Channel);
 
             /*await ctx.TriggerTypingAsync();
 
