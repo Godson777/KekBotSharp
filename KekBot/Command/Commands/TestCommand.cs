@@ -32,12 +32,12 @@ namespace KekBot {
             for (int i = 0; i < 5; i++) {
                 var builder = new DiscordEmbedBuilder();
                 builder.Title = $"{i}";
-                pag.embeds.Add(builder.Build());
+                pag.Embeds.Add(builder.Build());
             }
             pag.users.Add(ctx.Member.Id);
-            pag.showPageNumbers = true;
+            pag.ShowPageNumbers = true;
             pag.timeout = TimeSpan.FromSeconds(30);
-            pag.finalAction = async m => await m.DeleteAllReactionsAsync();
+            pag.FinalAction = async m => await m.DeleteAllReactionsAsync();
 
             await pag.Display(ctx.Channel);
 

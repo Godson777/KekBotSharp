@@ -26,6 +26,7 @@ namespace KekBot.Menu {
         }
 
         public override async Task Display(DiscordChannel channel) {
+            //TODO: Implement permission checks
             await Paginate(channel, 1);
         }
 
