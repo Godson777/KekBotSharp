@@ -35,7 +35,7 @@ namespace KekBot.ArgumentResolvers {
             if (choices.Length < 2) return choices;
 
             var last = choices[^1];
-            if (last.StartsWith(or)) {
+            if (last.StartsWith(or, System.StringComparison.Ordinal)) {
                 last = last.Remove(0, or.Length);
                 choices[^1] = last;
             }
