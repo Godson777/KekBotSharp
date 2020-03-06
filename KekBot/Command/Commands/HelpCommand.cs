@@ -20,7 +20,10 @@ namespace KekBot.Command.Commands {
         private const string tagline = "KekBot, your friendly meme based bot!";
 
         [Command("help"), Description("You're already here, aren't you?"), Category(Category.General)]
-        public async Task Help(CommandContext ctx, [RemainingText, Description("The command or category to look for.")] string query = "") {
+        public async Task Help(
+            CommandContext ctx,
+            [RemainingText, Description("The command or category to look for.")] string query = ""
+        ) {
             //If no arguments were given, bring the commands list.
             if (query.Length == 0) {
                 var paginator = new EmbedPaginator(ctx.Client.GetInteractivity()) {
