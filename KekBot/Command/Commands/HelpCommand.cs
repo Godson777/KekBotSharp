@@ -42,27 +42,25 @@ namespace KekBot.Command.Commands
 
 
             //Find the command
-            var cmd = ctx.CommandsNext.FindCommand(query, out var args);
             //Was the command found?
-            if (cmd == null)
+            if (ctx.CommandsNext.FindCommand(query, out var _) is DSharpPlus.CommandsNext.Command cmd)
             {
-                if (Enum.TryParse(query, true, out Category cat))
-                {
-                    var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
-                    paginator.users.Add(ctx.Member.Id);
-                    paginator.ShowPageNumbers = true;
-
-                    PrintCommandsInCategory(ctx, paginator, cat);
-                    await paginator.Display(ctx.Channel);
-                }
-                else
-                {
-                    await ctx.RespondAsync("Command/Category not found.");
-                }
+                await PrintCommandHelp(ctx, cmd);
                 return;
             }
 
-            await PrintCommandHelp(ctx, cmd);
+            if (Enum.TryParse(query, true, out Category cat))
+            {
+                var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
+                paginator.users.Add(ctx.Member.Id);
+                paginator.ShowPageNumbers = true;
+
+                PrintCommandsInCategory(ctx, paginator, cat);
+                await paginator.Display(ctx.Channel);
+                return;
+            }
+
+            await ctx.RespondAsync("Command/Category not found.");
         }
 
         private static void PrintCommandsInCategory(CommandContext ctx, EmbedPaginator paginator, Category cat)
