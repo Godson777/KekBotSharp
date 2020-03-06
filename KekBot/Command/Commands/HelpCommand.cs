@@ -12,11 +12,10 @@ using DSharpPlus.Interactivity;
 using KekBot.Attributes;
 using KekBot.Menu;
 using KekBot.Util;
-using System.Collections.Generic;
 
 namespace KekBot.Command.Commands {
-
     class HelpCommand : BaseCommandModule {
+
         private const string tagline = "KekBot, your friendly meme based bot!";
 
         [Command("help"), Description("You're already here, aren't you?"), Category(Category.General)]
@@ -142,5 +141,6 @@ namespace KekBot.Command.Commands {
             embed.AddField("Usage:", usage.ToString(), inline: false);
             await ctx.RespondAsync(embed: embed);
         }
+
     }
 }

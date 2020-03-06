@@ -1,7 +1,6 @@
 ﻿using System;
 
-namespace KekBot.Attributes
-{
+namespace KekBot.Attributes {
     [AttributeUsage(AttributeTargets.Method)]
     partial class CategoryAttribute : Attribute {
 
