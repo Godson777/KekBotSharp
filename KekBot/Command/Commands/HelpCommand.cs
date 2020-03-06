@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
+// Conflicts with KekBot.Command otherwise
+using Cmd = DSharpPlus.CommandsNext.Command;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
@@ -36,7 +38,7 @@ namespace KekBot.Command.Commands {
 
 
             //Print the command help, if the command has been found.
-            if (ctx.CommandsNext.FindCommand(query, out var _) is DSharpPlus.CommandsNext.Command cmd) {
+            if (ctx.CommandsNext.FindCommand(query, out var _) is Cmd cmd) {
                 await PrintCommandHelp(ctx, cmd);
                 return;
             }
@@ -74,7 +76,7 @@ namespace KekBot.Command.Commands {
             }
         }
 
-        private static async Task PrintCommandHelp(CommandContext ctx, DSharpPlus.CommandsNext.Command cmd) {
+        private static async Task PrintCommandHelp(CommandContext ctx, Cmd cmd) {
             //Setup the embed.
             var embed = new DiscordEmbedBuilder();
             embed.WithAuthor(tagline, null, ctx.Client.CurrentUser.AvatarUrl);
