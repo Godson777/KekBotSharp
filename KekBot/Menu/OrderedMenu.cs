@@ -23,6 +23,7 @@ namespace KekBot.Menu {
         }
         //TODO: finish literally this entire class LMAO
         public override Task Display(DiscordChannel channel) {
+            throw new NotImplementedException();
         }
 
         public override Task Display(DiscordMessage message) {

@@ -11,6 +11,8 @@ using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using KekBot.Attributes;
 using KekBot.Menu;
+using KekBot.Util;
+using System.Collections.Generic;
 
 namespace KekBot.Command.Commands {
 
@@ -39,7 +41,7 @@ namespace KekBot.Command.Commands {
 
             //Print the command help, if the command has been found.
             if (ctx.CommandsNext.FindCommand(query, out var _) is Cmd cmd) {
-                await PrintCommandHelp(ctx, cmd);
+                await DisplayCommandHelp(ctx, cmd);
                 return;
             }
             
@@ -65,7 +67,7 @@ namespace KekBot.Command.Commands {
                 .Distinct();
             for (int i = 0; i < cmds.Count(); i += 10) {
                 var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
-                DiscordEmbedBuilder builder = new DiscordEmbedBuilder {
+                var builder = new DiscordEmbedBuilder {
                     Title = Enum.GetName(typeof(Category), cat),
                     Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"))
                 };
@@ -76,90 +78,65 @@ namespace KekBot.Command.Commands {
             }
         }
 
-        private static async Task PrintCommandHelp(CommandContext ctx, Cmd cmd) {
+        private static async Task DisplayCommandHelp(CommandContext ctx, Cmd cmd) {
             //Setup the embed.
-            var embed = new DiscordEmbedBuilder();
-            embed.WithAuthor(tagline, null, ctx.Client.CurrentUser.AvatarUrl);
-            embed.Author.Name = tagline;
-            //Prepare ourselves in case the command has aliases
-            var aliases = new StringBuilder();
-            for (int i = 0; i < cmd.Aliases.Count; i++) {
-                string alias = cmd.Aliases[i];
-                aliases.Append($"`{alias}`");
-                if (i < cmd.Aliases.Count - 1) aliases.Append(", ");
-            }
-            embed.Title = $"`{cmd.Name}`" + (cmd.Aliases.Count > 0 ? $" (or {aliases.ToString()})" : "");
-            embed.Description = cmd.Description;
+            var aliases = string.Join(", ", cmd.Aliases.Select(alias => $"`{alias}`"));
+            var embed = new DiscordEmbedBuilder
+            {
+                Title = $"`{cmd.Name}`" + (aliases.Length > 0 ? $" (or {aliases})" : ""),
+                Description = cmd.Description
+            };
+            embed.WithAuthor(name: tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
             //Prepare ourselves for usage
             var usage = new StringBuilder();
             //The total count of subcommands and overloads.
             var count = cmd.Overloads.Count;
 
             //Do we have any subcommands?
-            if (cmd is CommandGroup g) {
-                count += g.Children.Count;
+            if (cmd is CommandGroup group) {
+                count += group.Children.Count;
                 //The following loop handles subcommands and their appropriate usage.
-                foreach (var subcmd in g.Children) {
-                    if (subcmd.Overloads.Count > 1 || subcmd is CommandGroup) {
+                foreach (var subcmd in group.Children) {
+                    if (subcmd.Overloads.Count > 1 || subcmd is CommandGroup)
                         usage.Append($"`{cmd.Name} {subcmd.Name}`: Visit `help {cmd.Name} {subcmd.Name}` for more information.");
-                    } else {
-                        usage.Append($"`{cmd.Name} {subcmd.Name}");
-                        var ovrld = subcmd.Overloads[0];
-                        //Make sure we actually have arguments, otherwise don't bother adding a space for them.
-                        if (ovrld.Arguments.Count < 1) {
-                            usage.AppendLine($"`: {subcmd.Description}");
-                            if (count <= 6) usage.AppendLine();
-                            continue;
-                        }
-                        //We have arguments, let's print them.
-                        usage.Append(" ");
-                        for (int i = 0; i < ovrld.Arguments.Count; i++) {
-                            CommandArgument arg = ovrld.Arguments[i];
-                            usage.Append(arg.IsOptional ? $"({arg.Name})" : $"[{arg.Name}]");
-                            if (i < ovrld.Arguments.Count - 1) usage.Append(" ");
-                        }
-                        usage.AppendLine($"`: {subcmd.Description}");
-                        //Second argument loop for descriptions (if overloads <= 5)
-                        if (count <= 6) {
-                            foreach (var arg in ovrld.Arguments) {
-                                usage.AppendLine($"`{arg.Name}`: {arg.Description}");
-                            }
-                            usage.AppendLine();
-                        }
-                        //usage.AppendLine(count <= 6 ? "" : "`");
-                    }
+                    else
+                        AppendOverload(subcmd.Overloads.Single(), subcmd);
                 }
             }
 
             //The following loop handles overloads.
             foreach (var ovrld in cmd.Overloads) {
-                if (ovrld.Priority < 0) continue;
-                usage.Append($"`{cmd.Name}");
-                //Make sure we actually have arguments, otherwise don't bother adding a space for them.
-                if (ovrld.Arguments.Count < 1) {
-                    usage.AppendLine("`");
-                    if (count <= 6) usage.AppendLine();
-                    continue;
-                }
+                if (ovrld.Priority >= 0)
+                    AppendOverload(ovrld);
+            }
 
-                //We have arguments, let's print them.
-                usage.Append(" ");
-                //First argument loop for usage
-                for (int i = 0; i < ovrld.Arguments.Count; i++) {
-                    CommandArgument arg = ovrld.Arguments[i];
-                    usage.Append(arg.IsOptional ? $"({arg.Name})" : $"[{arg.Name}]");
-                    if (i < ovrld.Arguments.Count - 1) usage.Append(" ");
+            //I heard you like methods, so I put a method in your method.
+            void AppendOverload(CommandOverload ovrld, Cmd? subcmd = null) {
+                var ovrldHasArgs = ovrld.Arguments.Count > 0;
+
+                usage.Append("`");
+                usage.Append(cmd.Name);
+                if (subcmd != null) usage.Append($" {subcmd.Name}");
+                //Make sure we actually have arguments, otherwise don't bother adding a space for them.
+                if (ovrldHasArgs) {
+                    usage.Append(" ");
+                    //We have arguments, let's print them.
+                    usage.AppendJoin(" ", ovrld.Arguments.Select(arg => arg.IsOptional ? $"({arg.Name})" : $"[{arg.Name}]"));
                 }
-                //Second argument loop for descriptions (if overloads <= 5)
-                usage.AppendLine("`");
+                usage.Append("`");
+
+                if (subcmd != null) usage.Append($": {subcmd.Description}");
+                usage.AppendLine();
+                //Is the count of subcommands and overloads short?
                 if (count <= 6) {
-                    foreach (var arg in ovrld.Arguments) {
-                        usage.AppendLine($"`{arg.Name}`: {arg.Description}");
-                    }
+                    //Second argument loop for descriptions (if count is short)
+                    if (ovrldHasArgs)
+                        usage.AppendLines(ovrld.Arguments.Select(arg => $"`{arg.Name}`: {arg.Description}"));
                     usage.AppendLine();
                 }
             }
-            embed.AddField("Usage:", usage.ToString(), false);
+
+            embed.AddField("Usage:", usage.ToString(), inline: false);
             await ctx.RespondAsync(embed: embed);
         }
     }
