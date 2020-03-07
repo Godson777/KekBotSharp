@@ -39,7 +39,6 @@ namespace KekBot.Command.Commands {
             }
         }
 
-
         private static async Task DisplayCommandHelp(CommandContext ctx, Cmd cmd) {
             //Setup the embed.
             var aliases = string.Join(", ", cmd.Aliases.Select(alias => $"`{alias}`"));
@@ -102,7 +101,6 @@ namespace KekBot.Command.Commands {
 
         private static async Task DisplayCategoryHelp(CommandContext ctx, Category? catOrAll = null) {
             var paginator = new EmbedPaginator(ctx.Client.GetInteractivity()) {
-                FinalAction = async m => await m.DeleteAllReactionsAsync(),
                 ShowPageNumbers = true
             };
             paginator.users.Add(ctx.Member.Id);
