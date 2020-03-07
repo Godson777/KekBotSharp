@@ -2,30 +2,31 @@
 using DSharpPlus.Interactivity;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace KekBot.Menu {
     class Paginator : Menu {
-        public Func<int, int, DiscordColor> color { private get; set; }
-        public Func<int, int, String> text { private get; set; }
-        public int columns { private get; set; } = 1;
-        public int itemsPerPage { private get; set; } = 10;
-        public bool showPageNumbers { private get; set; } = true;
-        public bool numberItems { private get; set; } = true;
-        public List<string> strings { get; private set; } = new List<string>();
-        private int pages { get {
-                return (int)Math.Ceiling((double)this.strings.Count / itemsPerPage);
-            } }
-        public Action<DiscordMessage>? finalAction { private get; set; }
-        public int bulkSkipNumber { private get; set; } = 0;
-        public bool wrapPageEnds { private get; set; } = true;
+        public Func<int, int, DiscordColor> Color { private get; set; }
+        public Func<int, int, string> Text { private get; set; }
+        public int Columns { private get; set; } = 1;
+        public int ItemsPerPage { private get; set; } = 10;
+        public bool ShowPageNumbers { private get; set; } = true;
+        public bool NumberItems { private get; set; } = true;
+        public List<string> Strings { get; private set; } = new List<string>();
+        private int Pages => (int)Math.Ceiling((double)Strings.Count / ItemsPerPage);
+        public Action<DiscordMessage>? FinalAction { private get; set; }
+        public int BulkSkipNumber { private get; set; } = 0;
+        public bool WrapPageEnds { private get; set; } = true;
 
-        protected string BIG_LEFT { get; set; } = "⏪";
-        protected string LEFT { get; set; } = "◀️";
-        protected string STOP { get; set; } = "⏹";
-        protected string RIGHT { get; set; } = "▶";
-        protected string BIG_RIGHT { get; set; } = "⏩";
+        protected string BigLeft { get; private set; } = "⏪";
+        protected string Left { get; private set; } = "◀️";
+        protected string Stop { get; private set; } = "⏹";
+        protected string Right { get; private set; } = "▶";
+        protected string BigRight { get; private set; } = "⏩";
+        protected string[] LeftRightStop() => new string[] { Left, Right, Stop };
+        protected string[] BigLeftRight() => new string[] { BigLeft, BigRight };
 
         public Paginator(InteractivityExtension interactivity) : base(interactivity) {
         }
@@ -42,8 +43,8 @@ namespace KekBot.Menu {
         private async Task Paginate(DiscordChannel channel, int pageNum) {
             if (pageNum < 1)
                 pageNum = 1;
-            else if (pageNum > pages)
-                pageNum = pages;
+            else if (pageNum > Pages)
+                pageNum = Pages;
             var msg = RenderPage(pageNum);
             await Initialize(await channel.SendMessageAsync(embed: msg), pageNum);
         }
@@ -51,103 +52,99 @@ namespace KekBot.Menu {
         private async Task Paginate(DiscordMessage message, int pageNum) {
             if (pageNum < 1)
                 pageNum = 1;
-            else if (pageNum > pages)
-                pageNum = pages;
+            else if (pageNum > Pages)
+                pageNum = Pages;
             var msg = RenderPage(pageNum);
             await Initialize(await message.ModifyAsync(embed: msg), pageNum);
         }
 
         private async Task Initialize(DiscordMessage message, int pageNum) {
-            if (pages > 1) {
-                if (bulkSkipNumber > 1) {
-                    await message.CreateReactionAsync(DiscordEmoji.FromUnicode(BIG_LEFT));
+            if (Pages > 1) {
+                if (BulkSkipNumber > 1) {
+                    await message.CreateReactionAsync(DiscordEmoji.FromUnicode(BigLeft));
                 }
 
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(LEFT));
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(STOP));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Left));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Stop));
 
-                if (bulkSkipNumber > 1) {
-                    await message.CreateReactionAsync(DiscordEmoji.FromUnicode(RIGHT));
+                if (BulkSkipNumber > 1) {
+                    await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Right));
                 }
 
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(bulkSkipNumber > 1 ? BIG_RIGHT : RIGHT));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(BulkSkipNumber > 1 ? BigRight : Right));
             } else {
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(STOP));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Stop));
             }
             await Pagination(message, pageNum);
         }
 
         private async Task Pagination(DiscordMessage message, int pageNum) {
-            var result = await interactivity.WaitForReactionAsync(react => {
+            var result = await Interactivity.WaitForReactionAsync(react => {
                 if (react.Message.Id != message.Id) return false;
-                if (LEFT.Equals(react.Emoji.Name) || STOP.Equals(react.Emoji.Name) || RIGHT.Equals(react.Emoji.Name)) return isValidUser(react.User, react.Guild);
-                if (BIG_LEFT.Equals(react.Emoji.Name) || BIG_RIGHT.Equals(react.Emoji.Name)) return bulkSkipNumber > 1 && isValidUser(react.User, react.Guild);
+                if (LeftRightStop().Contains(react.Emoji.Name)) return IsValidUser(react.User, react.Guild);
+                if (BigLeftRight().Contains(react.Emoji.Name)) return BulkSkipNumber > 1 && IsValidUser(react.User, react.Guild);
                 return false;
-            }, timeout);
+            }, Timeout);
 
             if (result.TimedOut) {
-                finalAction.Invoke(message);
+                FinalAction?.Invoke(message);
                 return;
             }
 
             var newPageNum = pageNum;
             var e = result.Result.Emoji.Name;
-            if (e.Equals(LEFT)) {
-                if (newPageNum == 1 && wrapPageEnds) newPageNum = pages + 1;
+            if (e == Left) {
+                if (newPageNum == 1 && WrapPageEnds) newPageNum = Pages + 1;
                 if (newPageNum > 1) newPageNum--;
-            }
-            if (e.Equals(RIGHT)) {
-                if (newPageNum == pages && wrapPageEnds) newPageNum = 0;
-                if (newPageNum < pages) newPageNum++;
-            }
-            if (e.Equals(BIG_LEFT)) {
-                if (newPageNum > 1 || wrapPageEnds) {
-                    for (int i = 1; (newPageNum > 1 || wrapPageEnds) && i < bulkSkipNumber; i++) {
-                        if (newPageNum == 1 && wrapPageEnds) newPageNum = pages + 1;
+            } else if (e == Right) {
+                if (newPageNum == Pages && WrapPageEnds) newPageNum = 0;
+                if (newPageNum < Pages) newPageNum++;
+            } else if (e == BigLeft) {
+                if (newPageNum > 1 || WrapPageEnds) {
+                    for (int i = 1; (newPageNum > 1 || WrapPageEnds) && i < BulkSkipNumber; i++) {
+                        if (newPageNum == 1 && WrapPageEnds) newPageNum = Pages + 1;
                         newPageNum--;
                     }
                 }
-            }
-            if (e.Equals(BIG_RIGHT)) {
-                if (newPageNum < pages || wrapPageEnds) {
-                    for (int i = 1; (newPageNum < pages || wrapPageEnds) && i < bulkSkipNumber; i++) {
-                        if (newPageNum == pages && wrapPageEnds) newPageNum = 0;
+            } else if (e == BigRight) {
+                if (newPageNum < Pages || WrapPageEnds) {
+                    for (int i = 1; (newPageNum < Pages || WrapPageEnds) && i < BulkSkipNumber; i++) {
+                        if (newPageNum == Pages && WrapPageEnds) newPageNum = 0;
                         newPageNum++;
                     }
                 }
-            }
-            if (e.Equals(STOP)) {
-                finalAction.Invoke(message);
+            } else if (e == Stop) {
+                FinalAction?.Invoke(message);
                 return;
             }
 
             await result.Result.Message.DeleteReactionAsync(result.Result.Emoji, result.Result.User);
-            var m = await message.ModifyAsync(content: text != null ? text.Invoke(pageNum, pages) : null, embed: RenderPage(newPageNum));
+            var m = await message.ModifyAsync(content: Text?.Invoke(pageNum, Pages), embed: RenderPage(newPageNum));
             await Pagination(m, newPageNum);
         }
 
         private DiscordEmbed RenderPage(int pageNum) {
-            DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
-            int start = (pageNum - 1) * itemsPerPage;
-            int end = strings.Count < pageNum * itemsPerPage ? strings.Count : pageNum * itemsPerPage;
-            if (columns == 1) {
-                StringBuilder sbuilder = new StringBuilder();
+            var builder = new DiscordEmbedBuilder();
+            int start = (pageNum - 1) * ItemsPerPage;
+            int end = Strings.Count < pageNum * ItemsPerPage ? Strings.Count : pageNum * ItemsPerPage;
+            if (Columns == 1) {
+                var sbuilder = new StringBuilder();
                 for (int i = start; i < end; i++)
-                    sbuilder.Append("\n").Append(numberItems ? $"`{i+1}.` " : "").Append(strings[i]);
+                    sbuilder.Append("\n").Append(NumberItems ? $"`{i+1}.` " : "").Append(Strings[i]);
                 builder.Description = sbuilder.ToString();
             } else {
-                int per = (int)Math.Ceiling((double)(end - start) / columns);
-                for (int k = 0; k < columns; k++) {
-                    StringBuilder sbuilder = new StringBuilder();
+                int per = (int)Math.Ceiling((double)(end - start) / Columns);
+                for (int k = 0; k < Columns; k++) {
+                    var sbuilder = new StringBuilder();
                     for (int i = start + k * per; i < end && i < start + (k + 1) * per; i++)
-                        sbuilder.Append("\n").Append(numberItems ? $"{i + 1}. " : "").Append(strings[i]);
+                        sbuilder.Append("\n").Append(NumberItems ? $"{i + 1}. " : "").Append(Strings[i]);
                     builder.AddField("", sbuilder.ToString(), true);
                 }
             }
 
-            if (color != null) builder.Color = color.Invoke(pageNum, pages);
-            if (showPageNumbers)
-                builder.WithFooter($"Page {pageNum}/{pages}");
+            if (Color != null) builder.Color = Color.Invoke(pageNum, Pages);
+            if (ShowPageNumbers)
+                builder.WithFooter($"Page {pageNum}/{Pages}");
             return builder.Build();
         }
     }

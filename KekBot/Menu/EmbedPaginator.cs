@@ -4,24 +4,21 @@ using DSharpPlus.Interactivity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 
 namespace KekBot.Menu {
     public class EmbedPaginator : Menu {
 
-        public DiscordColor Color { private get; set; }
-        public Action<DiscordMessage>? FinalAction { private get; set; } = async m => await m.DeleteAllReactionsAsync();
-        public bool ShowPageNumbers { private get; set; }
+        public DiscordColor Color { get; set; }
+        public Action<DiscordMessage>? FinalAction { get; set; } = async m => await m.DeleteAllReactionsAsync();
+        public bool ShowPageNumbers { get; set; }
         protected int Pages => Embeds.Count;
         public List<DiscordEmbed> Embeds { get; private set; } = new List<DiscordEmbed>();
 
-        protected string LEFT { get; private set; } = "◀️";
-        protected string STOP { get; private set; } = "⏹️";
-        protected string RIGHT { get; private set; } = "▶️";
-        protected string[] LEFT_RIGHT_STOP => new string[] { LEFT, RIGHT, STOP };
+        protected string Left { get; private set; } = "◀️";
+        protected string Stop { get; private set; } = "⏹️";
+        protected string Right { get; private set; } = "▶️";
+        protected string[] LeftRightStop() => new string[] { Left, Right, Stop };
         public EmbedPaginator(InteractivityExtension interactivity) : base(interactivity) {
         }
 
@@ -54,21 +51,21 @@ namespace KekBot.Menu {
 
         private async Task Initialize(DiscordMessage message, int pageNum) {
             if (Pages > 1) {
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(LEFT));
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(STOP));
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(RIGHT));
-             } else {
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(STOP));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Left));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Stop));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Right));
+            } else {
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Stop));
             }
             await Pagination(message, pageNum);
         }
 
         private async Task Pagination(DiscordMessage message, int pageNum) {
-            var result = await interactivity.WaitForReactionAsync(react => {
+            var result = await Interactivity.WaitForReactionAsync(react => {
                 if (react.Message.Id != message.Id) return false;
-                if (!LEFT_RIGHT_STOP.Contains(react.Emoji.Name)) return false;
-                return isValidUser(react.User, react.Guild);
-            }, timeout);
+                if (!LeftRightStop().Contains(react.Emoji.Name)) return false;
+                return IsValidUser(react.User, react.Guild);
+            }, Timeout);
 
             if (result.TimedOut) {
                 FinalAction?.Invoke(message);
@@ -77,11 +74,11 @@ namespace KekBot.Menu {
 
             var newPageNum = pageNum;
             var e = result.Result.Emoji.Name;
-            if (e == LEFT) {
+            if (e == Left) {
                 if (newPageNum > 1) newPageNum--;
-            } else if (e == RIGHT) {
+            } else if (e == Right) {
                 if (newPageNum < Pages) newPageNum++;
-            } else if (e == STOP) {
+            } else if (e == Stop) {
                 FinalAction?.Invoke(message);
                 return;
             }
@@ -92,22 +89,22 @@ namespace KekBot.Menu {
         }
 
         private DiscordEmbed RenderPage(int pageNum) {
-            DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
-            DiscordEmbed e = Embeds[pageNum - 1];
+            var builder = new DiscordEmbedBuilder();
+            var e = Embeds[pageNum - 1];
 
-            foreach (DiscordEmbedField field in e.Fields) {
+            foreach (var field in e.Fields) {
                 builder.AddField(field.Name, field.Value, field.Inline);
             }
             builder.Title = e.Title ?? "";
             builder.Description = e.Description;
-            if (e.Color != null) builder.Color = e.Color;
-            else builder.Color = Color;
+            builder.Color = (DiscordColor?)e.Color ?? Color;
             builder.ThumbnailUrl = e.Thumbnail?.Url?.ToString();
             builder.Timestamp = e.Timestamp;
             builder.WithAuthor(e.Author?.Name, e.Author?.Url?.ToString(), e.Author?.IconUrl?.ToString());
 
             if (ShowPageNumbers) builder.WithFooter($"Page {pageNum}/{Pages}" + (e.Footer != null ? $" | {e.Footer.Text}" : ""));
             else builder.WithFooter(e.Footer.Text);
+
             return builder.Build();
         }
     }

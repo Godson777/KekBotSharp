@@ -14,10 +14,10 @@ using KekBot.Command.Commands;
 namespace KekBot {
     class Program {
 
-        static DiscordClient? discord;
-        static CommandsNextExtension? commands;
-        static ConcurrentDictionary<ulong, string> PrefixSettings = new ConcurrentDictionary<ulong, string>();
-        static InteractivityExtension? interactivity;
+        static DiscordClient? Discord;
+        static CommandsNextExtension? Commands;
+        static readonly ConcurrentDictionary<ulong, string> PrefixSettings = new ConcurrentDictionary<ulong, string>();
+        static InteractivityExtension? Interactivity;
 
         static void Main(string[] args) {
             PrefixSettings.AddOrUpdate(283100276125073409ul, "c#", (k, vold) => "p$");
@@ -25,37 +25,37 @@ namespace KekBot {
             MainAsync(args).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        static async Task MainAsync(string[] args) {
+        static async Task MainAsync(string[] _) {
             Config config = await GetConfig();
-            discord = new DiscordClient(new DiscordConfiguration {
+            Discord = new DiscordClient(new DiscordConfiguration {
                 Token = config.Token,
                 TokenType = TokenType.Bot,
                 LogLevel = LogLevel.Debug,
                 UseInternalLogHandler = true
             });
 
-            interactivity = discord.UseInteractivity(new InteractivityConfiguration());
+            Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
-            commands = discord.UseCommandsNext(new CommandsNextConfiguration {
+            Commands = Discord.UseCommandsNext(new CommandsNextConfiguration {
                 EnableMentionPrefix = true,
                 PrefixResolver = ResolvePrefixAsync,
                 IgnoreExtraArguments = true,
                 EnableDefaultHelp = false
             });
 
-            commands.CommandErrored += PrintError;
+            Commands.CommandErrored += PrintError;
 
-            commands.RegisterConverter(new ChoicesConverter());
-            commands.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
+            Commands.RegisterConverter(new ChoicesConverter());
+            Commands.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
 
-            commands.RegisterCommands<TestCommand>();
-            commands.RegisterCommands<PickCommand>();
-            commands.RegisterCommands<PingCommand>();
-            commands.RegisterCommands<OwnerCommands>();
-            commands.RegisterCommands<TestCommandTwo>();
-            commands.RegisterCommands<HelpCommand>();
+            Commands.RegisterCommands<TestCommand>();
+            Commands.RegisterCommands<PickCommand>();
+            Commands.RegisterCommands<PingCommand>();
+            Commands.RegisterCommands<OwnerCommands>();
+            Commands.RegisterCommands<TestCommandTwo>();
+            Commands.RegisterCommands<HelpCommand>();
 
-            await discord.ConnectAsync();
+            await Discord.ConnectAsync();
             await Task.Delay(-1);
         }
 
@@ -77,16 +77,14 @@ namespace KekBot {
 
         public static async Task<Config> GetConfig() {
             //load config
-            var json = "";
-            using (FileStream fs = File.OpenRead("../../../../config/config.json"))
-            using (StreamReader sr = new StreamReader(fs, new UTF8Encoding(false)))
-                json = await sr.ReadToEndAsync();
-
-            return JsonConvert.DeserializeObject<Config>(json);
+            using var fs = File.OpenRead("../../../../config/config.json");
+            using var sr = new StreamReader(fs, new UTF8Encoding(false));
+            return JsonConvert.DeserializeObject<Config>(await sr.ReadToEndAsync());
         }
+
     }
 
-    public struct Config {
+    internal struct Config {
         [JsonProperty("token")]
         public string Token { get; private set; }
         [JsonProperty("database")]

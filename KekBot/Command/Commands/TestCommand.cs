@@ -34,9 +34,9 @@ namespace KekBot {
                 builder.Title = $"{i}";
                 pag.Embeds.Add(builder.Build());
             }
-            pag.users.Add(ctx.Member.Id);
+            pag.Users.Add(ctx.Member.Id);
             pag.ShowPageNumbers = true;
-            pag.timeout = TimeSpan.FromSeconds(30);
+            pag.Timeout = TimeSpan.FromSeconds(30);
             pag.FinalAction = async m => await m.DeleteAllReactionsAsync();
 
             await pag.Display(ctx.Channel);
