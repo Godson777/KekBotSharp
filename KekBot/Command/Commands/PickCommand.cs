@@ -2,10 +2,10 @@
 using DSharpPlus.CommandsNext.Attributes;
 using System;
 using System.Threading.Tasks;
-using KekBot.Util;
+using KekBot.Utils;
 
 namespace KekBot {
-    public class PickCommand : BaseCommandModule {
+    class PickCommand : BaseCommandModule {
 
         [Command("pick"), Aliases("choose", "decide"), Description("Has KekBot pick one of X choices for you.")]
         [Cooldown(10, 1.0, CooldownBucketType.User)]

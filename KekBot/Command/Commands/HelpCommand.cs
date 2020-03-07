@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
@@ -11,7 +12,7 @@ using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using KekBot.Attributes;
 using KekBot.Menu;
-using KekBot.Util;
+using KekBot.Utils;
 
 namespace KekBot.Command.Commands {
     class HelpCommand : BaseCommandModule {
@@ -19,76 +20,33 @@ namespace KekBot.Command.Commands {
         private const string tagline = "KekBot, your friendly meme based bot!";
 
         [Command("help"), Description("You're already here, aren't you?"), Category(Category.General)]
-        public async Task Help(
+        async Task Help(
             CommandContext ctx,
             [RemainingText, Description("The command or category to look for.")] string query = ""
         ) {
-            //If no arguments were given, bring the commands list.
             if (query.Length == 0) {
-                var paginator = new EmbedPaginator(ctx.Client.GetInteractivity()) {
-                    FinalAction = async m => await m.DeleteAllReactionsAsync(),
-                    ShowPageNumbers = true
-                };
-                paginator.users.Add(ctx.Member.Id);
-
-                var cats = Enum.GetValues(typeof(Category)).Cast<Category>();
-                foreach (var c in cats) {
-                    PrintCommandsInCategory(ctx, paginator, c);
-                }
-
-                await paginator.Display(ctx.Channel);
-                return;
-            }
-
-
-            //Print the command help, if the command has been found.
-            if (ctx.CommandsNext.FindCommand(query, out var _) is Cmd cmd) {
+                //If no arguments were given, bring the commands list.
+                await DisplayCategoryHelp(ctx);
+            } else if (ctx.CommandsNext.FindCommand(query, out var _) is Cmd cmd) {
+                //Print the command help, if the command has been found.
                 await DisplayCommandHelp(ctx, cmd);
-                return;
-            }
-            
-            //Command wasn't found, is it a category?
-            if (Enum.TryParse(query, true, out Category cat)) {
-                var paginator = new EmbedPaginator(ctx.Client.GetInteractivity());
-                paginator.users.Add(ctx.Member.Id);
-                paginator.ShowPageNumbers = true;
-
-                PrintCommandsInCategory(ctx, paginator, cat);
-                await paginator.Display(ctx.Channel);
-                return;
-            }
-            
-            //the answer is no
-            await ctx.RespondAsync("Command/Category not found.");
-        }
-
-        private static void PrintCommandsInCategory(CommandContext ctx, EmbedPaginator paginator, Category cat) {
-            var cmds = ctx.CommandsNext.RegisteredCommands.Values
-                .Where(c => c.GetCategory() == cat)
-                .OrderBy(c => c.Name)
-                .Distinct();
-            for (int i = 0; i < cmds.Count(); i += 10) {
-                var page = cmds.ToList().GetRange(i, Math.Min(i + 10, cmds.Count()));
-                var builder = new DiscordEmbedBuilder {
-                    Title = Enum.GetName(typeof(Category), cat),
-                    Description = string.Join("\n", page.Select(c => $"{c.Name} - {c.Description}"))
-                };
-                builder
-                    .WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl)
-                    .WithFooter("KekBot v2.0");
-                paginator.Embeds.Add(builder.Build());
+            } else if (Enum.TryParse(query, true, out Category cat)) {
+                //Command wasn't found, is it a category?
+                await DisplayCategoryHelp(ctx, cat);
+            } else {
+                //the answer is no
+                await ctx.RespondAsync("Command/Category not found.");
             }
         }
+
 
         private static async Task DisplayCommandHelp(CommandContext ctx, Cmd cmd) {
             //Setup the embed.
             var aliases = string.Join(", ", cmd.Aliases.Select(alias => $"`{alias}`"));
-            var embed = new DiscordEmbedBuilder
-            {
-                Title = $"`{cmd.Name}`" + (aliases.Length > 0 ? $" (or {aliases})" : ""),
-                Description = cmd.Description
-            };
-            embed.WithAuthor(name: tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
+            var embed = new DiscordEmbedBuilder()
+                .WithTitle($"`{cmd.Name}`" + (aliases.Length > 0 ? $" (or {aliases})" : ""))
+                .WithDescription(cmd.Description)
+                .WithAuthor(name: tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
             //Prepare ourselves for usage
             var usage = new StringBuilder();
             //The total count of subcommands and overloads.
@@ -140,6 +98,43 @@ namespace KekBot.Command.Commands {
 
             embed.AddField("Usage:", usage.ToString(), inline: false);
             await ctx.RespondAsync(embed: embed);
+        }
+
+        private static async Task DisplayCategoryHelp(CommandContext ctx, Category? catOrAll = null) {
+            var paginator = new EmbedPaginator(ctx.Client.GetInteractivity()) {
+                FinalAction = async m => await m.DeleteAllReactionsAsync(),
+                ShowPageNumbers = true
+            };
+            paginator.users.Add(ctx.Member.Id);
+
+            paginator.Embeds.AddRange(catOrAll is Category cat
+                ? GetCategoryPages(ctx, cat)
+                : Enum.GetValues(typeof(Category)).Cast<Category>().SelectMany(cat => GetCategoryPages(ctx, cat)));
+
+            await paginator.Display(ctx.Channel);
+        }
+
+        private static IEnumerable<DiscordEmbed> GetCategoryPages(CommandContext ctx, Category cat) {
+            var cmds = ctx.CommandsNext.RegisteredCommands.Values
+                .Where(c => c.GetCategory() == cat)
+                .OrderBy(c => c.Name)
+                .Distinct()
+                .ToList();
+            var works = Util.Range(end: 25, step: 10).ToArray() == new int[] { 0, 10, 20 };
+            if (works) {
+                Console.WriteLine("it worked");
+            } else {
+                Console.WriteLine("something went wrong");
+            }
+            return Util.Range(end: cmds.Count, step: 10)
+                .Select(i => new DiscordEmbedBuilder()
+                    .WithTitle(Enum.GetName(typeof(Category), cat))
+                    .WithDescription(string.Join("\n", cmds
+                        .GetRange(i, Math.Min(i + 10, cmds.Count))
+                        .Select(c => $"{c.Name} - {c.Description}")))
+                    .WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl)
+                    .WithFooter("KekBot v2.0")
+                    .Build());
         }
 
     }
