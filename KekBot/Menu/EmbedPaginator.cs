@@ -92,22 +92,22 @@ namespace KekBot.Menu {
         }
 
         private DiscordEmbed RenderPage(int pageNum) {
-            DiscordEmbedBuilder builder = new DiscordEmbedBuilder();
-            DiscordEmbed e = Embeds[pageNum - 1];
+            var builder = new DiscordEmbedBuilder();
+            var e = Embeds[pageNum - 1];
 
-            foreach (DiscordEmbedField field in e.Fields) {
+            foreach (var field in e.Fields) {
                 builder.AddField(field.Name, field.Value, field.Inline);
             }
             builder.Title = e.Title ?? "";
             builder.Description = e.Description;
-            if (e.Color != null) builder.Color = e.Color;
-            else builder.Color = Color;
+            builder.Color = (DiscordColor?)e.Color ?? Color;
             builder.ThumbnailUrl = e.Thumbnail?.Url?.ToString();
             builder.Timestamp = e.Timestamp;
             builder.WithAuthor(e.Author?.Name, e.Author?.Url?.ToString(), e.Author?.IconUrl?.ToString());
 
             if (ShowPageNumbers) builder.WithFooter($"Page {pageNum}/{Pages}" + (e.Footer != null ? $" | {e.Footer.Text}" : ""));
             else builder.WithFooter(e.Footer.Text);
+
             return builder.Build();
         }
     }
