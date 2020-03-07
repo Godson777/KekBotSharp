@@ -12,9 +12,9 @@ using System.Xml.Serialization;
 namespace KekBot.Menu {
     public class EmbedPaginator : Menu {
 
-        public DiscordColor Color { private get; set; }
-        public Action<DiscordMessage>? FinalAction { private get; set; } = async m => await m.DeleteAllReactionsAsync();
-        public bool ShowPageNumbers { private get; set; }
+        public DiscordColor Color { get; set; }
+        public Action<DiscordMessage>? FinalAction { get; set; } = async m => await m.DeleteAllReactionsAsync();
+        public bool ShowPageNumbers { get; set; }
         protected int Pages => Embeds.Count;
         public List<DiscordEmbed> Embeds { get; private set; } = new List<DiscordEmbed>();
 
