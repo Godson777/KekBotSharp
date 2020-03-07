@@ -103,7 +103,7 @@ namespace KekBot.Command.Commands {
             var paginator = new EmbedPaginator(ctx.Client.GetInteractivity()) {
                 ShowPageNumbers = true
             };
-            paginator.users.Add(ctx.Member.Id);
+            paginator.Users.Add(ctx.Member.Id);
 
             paginator.Embeds.AddRange(catOrAll is Category cat
                 ? GetCategoryPages(ctx, cat)

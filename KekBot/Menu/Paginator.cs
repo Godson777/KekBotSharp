@@ -78,12 +78,12 @@ namespace KekBot.Menu {
         }
 
         private async Task Pagination(DiscordMessage message, int pageNum) {
-            var result = await interactivity.WaitForReactionAsync(react => {
+            var result = await Interactivity.WaitForReactionAsync(react => {
                 if (react.Message.Id != message.Id) return false;
-                if (LEFT.Equals(react.Emoji.Name) || STOP.Equals(react.Emoji.Name) || RIGHT.Equals(react.Emoji.Name)) return isValidUser(react.User, react.Guild);
-                if (BIG_LEFT.Equals(react.Emoji.Name) || BIG_RIGHT.Equals(react.Emoji.Name)) return bulkSkipNumber > 1 && isValidUser(react.User, react.Guild);
+                if (LEFT.Equals(react.Emoji.Name) || STOP.Equals(react.Emoji.Name) || RIGHT.Equals(react.Emoji.Name)) return IsValidUser(react.User, react.Guild);
+                if (BIG_LEFT.Equals(react.Emoji.Name) || BIG_RIGHT.Equals(react.Emoji.Name)) return bulkSkipNumber > 1 && IsValidUser(react.User, react.Guild);
                 return false;
-            }, timeout);
+            }, Timeout);
 
             if (result.TimedOut) {
                 finalAction.Invoke(message);
