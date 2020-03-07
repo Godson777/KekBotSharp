@@ -11,6 +11,9 @@ using KekBot.ArgumentResolvers;
 using DSharpPlus.Interactivity;
 using KekBot.Command.Commands;
 using Newtonsoft.Json.Serialization;
+using System.Text.Json.Serialization;
+using System.Collections.Generic;
+using DSharpPlus.CommandsNext.Exceptions;
 
 namespace KekBot {
     class Program {
@@ -55,12 +58,14 @@ namespace KekBot {
             Commands.RegisterCommands<OwnerCommands>();
             Commands.RegisterCommands<TestCommandTwo>();
             Commands.RegisterCommands<HelpCommand>();
+            Commands.RegisterCommands<FunCommands>();
 
             await Discord.ConnectAsync();
             await Task.Delay(-1);
         }
 
         private async static Task PrintError(CommandErrorEventArgs e) {
+            if (e.Exception is CommandNotFoundException) return;
             await e.Context.Channel.SendMessageAsync($"An error occured: {e.Exception.Message}");
             Console.Error.WriteLine(e.Exception);
         }
@@ -75,8 +80,10 @@ namespace KekBot {
 
             return Task.FromResult(pLen);
         }
-
-        
+        /*
+         * @todo Adjust collecting resources like config.json and others.
+         * @body This needs to be edited later, either the location of all the resources should be a commandline argument, or we simply have a commandline argument named --dev or something to differentiate the environment KekBot is in. That way we can test but still have all the proper resources and stuff where they need to be.
+         */
     }
 
     internal struct Config {
@@ -92,15 +99,47 @@ namespace KekBot {
         public ulong BotOwner { get; private set; }
 
         public static async Task<Config> Get() {
-            /*
-             * @todo Adjust Config.Get()
-             * @body This needs to be edited later, either the location of config.json should be a commandline argument, or we simply have a commandline argument named --dev or something to differentiate the environment KekBot is in. That way we can test but still have all the proper resources and stuff where they need to be.
-             */
             using var fs = File.OpenRead("../../../../config/config.json");
             using var sr = new StreamReader(fs, new UTF8Encoding(false));
             return JsonConvert.DeserializeObject<Config>(await sr.ReadToEndAsync());
         }
     }
 
-    
+    internal struct CustomEmote {
+        //All the json values
+        [JsonProperty("thinkings")]
+        public List<string> Thinkings;
+        [JsonProperty("dances")]
+        public List<string> Dances;
+        [JsonProperty("topkek")]
+        public string Topkek { get; }
+        [JsonProperty("gold_trophy")]
+        public string GoldTrophy { get; }
+        [JsonProperty("silver_trophy")]
+        public string SilverTrophy { get; }
+        [JsonProperty("bronze_trophy")]
+        public string BronzeTrophy { get; }
+        [JsonProperty("loadings")]
+        public List<string> Loadings;
+
+        //Trying something clever I hope
+        public static Random random = new Random();
+        public string Think { get {
+                return Thinkings[random.Next(Thinkings.Count)];
+            } }
+        public string Dance { get {
+                return Dances[random.Next(Dances.Count)];
+            } }
+        public string Loading { get {
+                return Loadings[random.Next(Loadings.Count)];
+            } }
+
+        public static async Task<CustomEmote> Get() {
+            using var fs = File.OpenRead("../../../../config/emotes.json");
+            using var sr = new StreamReader(fs, new UTF8Encoding(false));
+            return JsonConvert.DeserializeObject<CustomEmote>(await sr.ReadToEndAsync());
+        }
+
+
+    }
 }
