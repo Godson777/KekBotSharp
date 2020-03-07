@@ -18,10 +18,10 @@ namespace KekBot.Menu {
         protected int Pages => Embeds.Count;
         public List<DiscordEmbed> Embeds { get; private set; } = new List<DiscordEmbed>();
 
-        protected string LEFT { get; private set; } = "◀️";
-        protected string STOP { get; private set; } = "⏹️";
-        protected string RIGHT { get; private set; } = "▶️";
-        protected string[] LEFT_RIGHT_STOP => new string[] { LEFT, RIGHT, STOP };
+        protected string Left { get; private set; } = "◀️";
+        protected string Stop { get; private set; } = "⏹️";
+        protected string Right { get; private set; } = "▶️";
+        protected string[] LeftRightStop() => new string[] { Left, Right, Stop };
         public EmbedPaginator(InteractivityExtension interactivity) : base(interactivity) {
         }
 
@@ -54,11 +54,11 @@ namespace KekBot.Menu {
 
         private async Task Initialize(DiscordMessage message, int pageNum) {
             if (Pages > 1) {
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(LEFT));
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(STOP));
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(RIGHT));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Left));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Stop));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Right));
             } else {
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(STOP));
+                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Stop));
             }
             await Pagination(message, pageNum);
         }
@@ -66,7 +66,7 @@ namespace KekBot.Menu {
         private async Task Pagination(DiscordMessage message, int pageNum) {
             var result = await Interactivity.WaitForReactionAsync(react => {
                 if (react.Message.Id != message.Id) return false;
-                if (!LEFT_RIGHT_STOP.Contains(react.Emoji.Name)) return false;
+                if (!LeftRightStop().Contains(react.Emoji.Name)) return false;
                 return IsValidUser(react.User, react.Guild);
             }, Timeout);
 
@@ -77,11 +77,11 @@ namespace KekBot.Menu {
 
             var newPageNum = pageNum;
             var e = result.Result.Emoji.Name;
-            if (e == LEFT) {
+            if (e == Left) {
                 if (newPageNum > 1) newPageNum--;
-            } else if (e == RIGHT) {
+            } else if (e == Right) {
                 if (newPageNum < Pages) newPageNum++;
-            } else if (e == STOP) {
+            } else if (e == Stop) {
                 FinalAction?.Invoke(message);
                 return;
             }
