@@ -57,7 +57,7 @@ namespace KekBot.Menu {
                 await message.CreateReactionAsync(DiscordEmoji.FromUnicode(LEFT));
                 await message.CreateReactionAsync(DiscordEmoji.FromUnicode(STOP));
                 await message.CreateReactionAsync(DiscordEmoji.FromUnicode(RIGHT));
-             } else {
+            } else {
                 await message.CreateReactionAsync(DiscordEmoji.FromUnicode(STOP));
             }
             await Pagination(message, pageNum);
