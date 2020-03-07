@@ -26,7 +26,7 @@ namespace KekBot {
         }
 
         static async Task MainAsync(string[] _) {
-            Config config = await GetConfig();
+            Config config = await Config.Get();
             Discord = new DiscordClient(new DiscordConfiguration {
                 Token = config.Token,
                 TokenType = TokenType.Bot,
@@ -75,13 +75,7 @@ namespace KekBot {
             return Task.FromResult(pLen);
         }
 
-        public static async Task<Config> GetConfig() {
-            //load config
-            using var fs = File.OpenRead("../../../../config/config.json");
-            using var sr = new StreamReader(fs, new UTF8Encoding(false));
-            return JsonConvert.DeserializeObject<Config>(await sr.ReadToEndAsync());
-        }
-
+        
     }
 
     internal struct Config {
@@ -95,5 +89,19 @@ namespace KekBot {
         public string DbPass { get; private set; }
         [JsonProperty("botOwner")]
         public ulong BotOwner { get; private set; }
+
+        public static async Task<Config> Get() {
+            //load config
+            var json = "";
+            /*
+             * @todo Adjust Config.Get()
+             * @body This needs to be edited later, either the location of config.json should be a commandline argument, or we simply have a commandline argument named --dev or something to differentiate the environment KekBot is in. That way we can test but still have all the proper resources and stuff where they need to be.
+             */
+            using (FileStream fs = File.OpenRead("../../../../config/config.json"))
+            using (StreamReader sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync();
+
+            return JsonConvert.DeserializeObject<Config>(json);
+        }
     }
 }
