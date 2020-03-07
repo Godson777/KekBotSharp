@@ -1,12 +1,8 @@
-﻿using DSharpPlus;
-using DSharpPlus.Entities;
+﻿using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.ConstrainedExecution;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace KekBot.Menu {
@@ -24,20 +20,16 @@ namespace KekBot.Menu {
 
         public abstract Task Display(DiscordMessage message);
 
-        protected bool IsValidUser(DiscordUser user) {
-            return this.IsValidUser(user, null);
-        }
-
-        protected bool IsValidUser(DiscordUser user, [AllowNull] DiscordGuild guild) {
+        private protected bool IsValidUser(DiscordUser user, DiscordGuild? guild = null) {
             if (user.IsBot) {
                 return false;
-            } else if (this.Users.Count == 0 && this.Roles.Count == 0) {
+            } else if (Users.Count == 0 && Roles.Count == 0) {
                 return true;
-            } else if (this.Users.Contains(user.Id)) {
+            } else if (Users.Contains(user.Id)) {
                 return true;
             } else if (guild != null && guild.Members.ContainsKey(user.Id)) {
-                var roles = (user as DiscordMember).Roles;
-                return roles.Select(x => x.Id).Intersect(this.Roles).Any();
+                var member = user as DiscordMember ?? guild.Members[user.Id];
+                return member.Roles.Any(r => Roles.Contains(r.Id));
             } else {
                 return false;
             }
