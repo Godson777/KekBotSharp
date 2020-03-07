@@ -12,12 +12,12 @@ namespace KekBot.Menu {
         public string Text { private get; set; }
         public string Description { private get; set; }
         public List<string> Choices { get; private set; } = new List<string>();
-        public Action<DiscordMessage, int> action { private get; set; }
-        public Action<DiscordMessage> cancel { private get; set; }
+        public Action<DiscordMessage, int> Action { private get; set; }
+        public Action<DiscordMessage> CancelAction { private get; set; }
 
-        private readonly string[] NUMBERS = { "1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "6⃣", "7⃣", "8⃣", "9⃣", "🔟" };
+        private readonly string[] Numbers = { "1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "6⃣", "7⃣", "8⃣", "9⃣", "🔟" };
 
-        private readonly string CANCEL = "❌";
+        private readonly string Cancel = "❌";
 
         public OrderedMenu(InteractivityExtension interactivity) : base(interactivity) {
         }
