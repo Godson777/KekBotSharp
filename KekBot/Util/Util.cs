@@ -21,16 +21,6 @@ namespace KekBot.Utils {
             return s;
         }
 
-        //internal static IEnumerable<T> StepBy<T>(this IEnumerable<T> list, int step) {
-        //    if (step == 0) throw new System.ArgumentOutOfRangeException(paramName: nameof(step));
-
-        //    int i = step;
-        //    foreach (var item in list) {
-        //        if (i == step) yield return item;
-        //        i = i == 0 ? step : i - 1;
-        //    }
-        //}
-
         internal static IEnumerable<int> Range(int start = 0, int end = int.MaxValue, int step = 1) {
             for (int n = start; n < end; n += step) {
                 yield return n;
