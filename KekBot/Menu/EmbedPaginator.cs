@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace KekBot.Menu {
     public class EmbedPaginator : Menu {
 
-        public DiscordColor Color { get; set; }
+        public DiscordColor Color { get; set; } = DiscordColor.White;
         public Action<DiscordMessage>? FinalAction { get; set; } = async m => await m.DeleteAllReactionsAsync();
         public bool ShowPageNumbers { get; set; }
         protected int Pages => Embeds.Count;
