@@ -11,9 +11,9 @@ namespace KekBot.ArgumentResolvers {
         public Task<Optional<ChoicesList>> ConvertAsync(string value, CommandContext ctx) {
             var choices = SplitChoices(value, "|");
             if (choices.Length == 1)
-                choices = StripOr(SplitChoices(choices[0], ","));
+                choices = StripOr(SplitChoices(choices.Single(), ","));
             if (choices.Length == 1)
-                choices = SplitChoices(choices[0], " ");
+                choices = SplitChoices(choices.Single(), " ");
             return Task.FromResult(Optional.FromValue(
                 new ChoicesList(choices)
             ));

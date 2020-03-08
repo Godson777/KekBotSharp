@@ -1,10 +1,11 @@
-﻿using DSharpPlus;
-using DSharpPlus.Entities;
-using DSharpPlus.Interactivity;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DSharpPlus;
+using DSharpPlus.Entities;
+using DSharpPlus.Interactivity;
+using KekBot.Utils;
 
 namespace KekBot.Menu {
     public class EmbedPaginator : Menu {
@@ -97,7 +98,7 @@ namespace KekBot.Menu {
             }
             builder.Title = e.Title ?? "";
             builder.Description = e.Description;
-            builder.Color = (DiscordColor?)e.Color ?? Color;
+            builder.Color = e.Color.ToNullable() ?? Color;
             builder.ThumbnailUrl = e.Thumbnail?.Url?.ToString();
             builder.Timestamp = e.Timestamp;
             builder.WithAuthor(e.Author?.Name, e.Author?.Url?.ToString(), e.Author?.IconUrl?.ToString());

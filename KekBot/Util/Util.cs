@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using DSharpPlus.Entities;
 
 namespace KekBot.Utils {
     static class Util {
 
-        internal static readonly System.Random Rng = new System.Random();
+        internal static readonly Random Rng = new Random();
 
         internal static T RandomElement<T>(this IEnumerable<T> list) => list.ElementAt(Rng.Next(list.Count()));
 
@@ -22,6 +23,12 @@ namespace KekBot.Utils {
             return s;
         }
 
+        internal static T? ToNullableClass<T>(this Optional<T> opt)
+            where T : class => opt.HasValue ? opt.Value : null;
+
+        internal static T? ToNullable<T>(this Optional<T> opt)
+            where T : struct => opt.HasValue ? (T?)opt.Value : null;
+
         internal static IEnumerable<int> Range(int start = 0, int end = int.MaxValue, int step = 1) {
             for (int n = start; n < end; n += step) {
                 yield return n;
@@ -34,6 +41,11 @@ namespace KekBot.Utils {
             } catch (Exception e) {
                 return fallback;
             }
+        }
+
+        internal static void Panic(string msg = "") {
+            Console.Error.WriteLine(msg);
+            Environment.Exit(1);
         }
 
     }
