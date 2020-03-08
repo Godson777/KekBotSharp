@@ -2,7 +2,7 @@
 
 namespace KekBot.Attributes {
     [AttributeUsage(AttributeTargets.Method)]
-    partial class CategoryAttribute : Attribute {
+    public class CategoryAttribute : Attribute {
 
         public CategoryAttribute(Category category) => Category = category;
 
