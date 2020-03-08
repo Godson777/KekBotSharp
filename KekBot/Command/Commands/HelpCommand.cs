@@ -118,12 +118,6 @@ namespace KekBot.Command.Commands {
                 .OrderBy(c => c.Name)
                 .Distinct()
                 .ToList();
-            var works = Util.Range(end: 25, step: 10).ToArray() == new int[] { 0, 10, 20 };
-            if (works) {
-                Console.WriteLine("it worked");
-            } else {
-                Console.WriteLine("something went wrong");
-            }
             return Util.Range(end: cmds.Count, step: 10)
                 .Select(i => new DiscordEmbedBuilder()
                     .WithTitle(Enum.GetName(typeof(Category), cat))
