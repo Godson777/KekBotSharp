@@ -268,22 +268,6 @@ namespace KekBot {
 
         public static async Task<CustomEmote> Get() {
             if (_instance == null) {
-                if (!File.Exists("../../../../config/emotes.json")) {
-                    //Make a default
-                    CustomEmote emotes = new CustomEmote() {
-                        Thinkings = new List<string>(),
-                        Dances = new List<string>(),
-                        Topkek = "💵",
-                        GoldTrophy = "🥇",
-                        SilverTrophy = "🥈",
-                        BronzeTrophy = "🥉",
-                        Loadings = new List<string>()
-                    };
-                    emotes.Thinkings.Add("🤔");
-                    emotes.Dances.Add("🕺");
-                    emotes.Loadings.Add("🔄");
-                    JsonConvert.SerializeObject(emotes);
-                }
                 using var fs = File.OpenRead("../../../../config/emotes.json");
                 using var sr = new StreamReader(fs, new UTF8Encoding(false));
                 return _instance = JsonConvert.DeserializeObject<CustomEmote>(await sr.ReadToEndAsync());
