@@ -35,13 +35,7 @@ namespace KekBot.Utils {
             }
         }
 
-        internal static int ParseInt(string intStr, int fallback) {
-            try {
-                return int.Parse(intStr);
-            } catch (Exception e) {
-                return fallback;
-            }
-        }
+        internal static int ParseInt(string intStr, int fallback) => int.TryParse(intStr, out var n) ? n : fallback;
 
         internal static void Panic(string msg = "") {
             Console.Error.WriteLine(msg);
