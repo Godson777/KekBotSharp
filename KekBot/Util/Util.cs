@@ -7,7 +7,7 @@ using DSharpPlus.Entities;
 namespace KekBot.Utils {
     static class Util {
 
-        internal static readonly System.Random Rng = new System.Random();
+        internal static readonly Random Rng = new Random();
 
         internal static T RandomElement<T>(this IEnumerable<T> list) => list.ElementAt(Rng.Next(list.Count()));
 
@@ -41,6 +41,11 @@ namespace KekBot.Utils {
             } catch (Exception e) {
                 return fallback;
             }
+        }
+
+        internal static void Panic(string msg = "") {
+            Console.Error.WriteLine(msg);
+            Environment.Exit(1);
         }
 
     }
