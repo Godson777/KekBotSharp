@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 using CategoryAttribute = KekBot.Attributes.CategoryAttribute;
 using DescriptionAttribute = DSharpPlus.CommandsNext.Attributes.DescriptionAttribute;
 
-namespace KekBot {
+namespace KekBot.Commands {
     public class OwnerCommands : BaseCommandModule {
         [Command("sudo"), Description("Forces a command to be run as someone else."), RequireOwner, Aliases("s", "sud", "sudoooooooo"), Category(Category.Fun)]
         [Priority(0)]

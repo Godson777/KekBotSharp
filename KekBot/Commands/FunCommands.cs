@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KekBot.Command.Commands {
+namespace KekBot.Commands {
     public class FunCommands : BaseCommandModule {
 
         private static readonly string[] EightBall = { "It is certain.", "It is decidedly so.", "Yes, definitely.", "You may rely on it.",
