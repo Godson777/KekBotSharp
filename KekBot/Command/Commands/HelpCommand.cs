@@ -80,7 +80,7 @@ namespace KekBot.Command.Commands {
                 if (ovrldHasArgs) {
                     usage.Append(" ");
                     //We have arguments, let's print them.
-                    usage.AppendJoin(" ", ovrld.Arguments.Select(arg => arg.IsOptional ? $"({arg.Name})" : $"[{arg.Name}]"));
+                    usage.AppendJoin(" ", ovrld.Arguments.Select(arg => (arg.IsOptional && !arg.IsCustomRequired()) ? $"({arg.Name})" : $"[{arg.Name}]"));
                 }
                 usage.Append("`");
 
