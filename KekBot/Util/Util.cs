@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -24,6 +25,14 @@ namespace KekBot.Utils {
         internal static IEnumerable<int> Range(int start = 0, int end = int.MaxValue, int step = 1) {
             for (int n = start; n < end; n += step) {
                 yield return n;
+            }
+        }
+
+        internal static int ParseInt(string intStr, int fallback) {
+            try {
+                return int.Parse(intStr);
+            } catch (Exception e) {
+                return fallback;
             }
         }
 
