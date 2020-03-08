@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using DSharpPlus.Entities;
 
 namespace KekBot.Utils {
     static class Util {
@@ -21,6 +22,12 @@ namespace KekBot.Utils {
             foreach (var line in lines) s.AppendLine(line);
             return s;
         }
+
+        internal static T? ToNullableClass<T>(this Optional<T> opt)
+            where T : class => opt.HasValue ? opt.Value : null;
+
+        internal static T? ToNullable<T>(this Optional<T> opt)
+            where T : struct => opt.HasValue ? (T?)opt.Value : null;
 
         internal static IEnumerable<int> Range(int start = 0, int end = int.MaxValue, int step = 1) {
             for (int n = start; n < end; n += step) {
