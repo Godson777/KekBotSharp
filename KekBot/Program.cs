@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -27,7 +28,7 @@ namespace KekBot {
         static readonly ConcurrentDictionary<ulong, string> PrefixSettings = new ConcurrentDictionary<ulong, string>();
         static InteractivityExtension? Interactivity;
         public static RethinkDB R = RethinkDB.R;
-        public static Connection conn;
+        public static Connection Conn;
 
 
         static void Main(string[] args) {
@@ -36,25 +37,25 @@ namespace KekBot {
             MainAsync(args).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
+        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Running the bot requires knowledge of English")]
         static async Task MainAsync(string[] _) {
             var config = await Config.Get();
 
             try {
-                conn = R.Connection().User(config.DbUser, config.DbPass).Connect();
-            } catch (ReqlDriverError e) {
-                Console.WriteLine("There was an error logging into rethinkdb, are you sure that it's on, or that you typed the info correctly?");
-                //end process
+                Conn = R.Connection().User(config.DbUser, config.DbPass).Connect();
+            } catch (ReqlDriverError) {
+                Util.Panic("There was an error logging into rethinkdb, are you sure that it's on, or that you typed the info correctly?");
             }
 
             if (config.Db == null) {
-                Console.WriteLine("There was no database to use provided. Make sure \"database\" is in your config.json.");
-                //end process
+                Util.Panic("There was no database to use provided. Make sure \"database\" is in your config.json.");
             }
-            if (!(bool)R.DbList().Contains(config.Db).Run(conn)) {
-                R.DbCreate(config.Db).Run(conn);
-                Console.Write("Database wasn't found, so it was created.");
+
+            if (!(bool)R.DbList().Contains(config.Db).Run(Conn)) {
+                R.DbCreate(config.Db).Run(Conn);
+                Console.WriteLine("Database wasn't found, so it was created.");
             }
-            conn.Use(config.Db);
+            Conn.Use(config.Db);
 
             Discord = new DiscordClient(new DiscordConfiguration {
                 Token = config.Token,
@@ -110,29 +111,29 @@ namespace KekBot {
      * Verifies if the all the tables exist in our database.
      */
         private static void verifyTables() {
-            if (!(bool)R.TableList().Contains("Profiles").Run(conn)) {
+            if (!(bool)R.TableList().Contains("Profiles").Run(Conn)) {
                 Console.WriteLine("\"Profiles\" table was not found, so it is being made.");
-                R.TableCreate("Profiles").OptArg("primary_key", "User ID").Run(conn);
+                R.TableCreate("Profiles").OptArg("primary_key", "User ID").Run(Conn);
             }
-            if (!(bool)R.TableList().Contains("Responses").Run(conn)) {
+            if (!(bool)R.TableList().Contains("Responses").Run(Conn)) {
                 Console.WriteLine("\"Responses\" table was not found, so it is being made.");
-                R.TableCreate("Responses").OptArg("primary_key", "Action").Run(conn);
+                R.TableCreate("Responses").OptArg("primary_key", "Action").Run(Conn);
             }
-            if (!(bool)R.TableList().Contains("Settings").Run(conn)) {
+            if (!(bool)R.TableList().Contains("Settings").Run(Conn)) {
                 Console.WriteLine("\"Settings\" table was not found, so it is being made.");
-                R.TableCreate("Settings").OptArg("primary_key", "Guild ID").Run(conn);
+                R.TableCreate("Settings").OptArg("primary_key", "Guild ID").Run(Conn);
             }
-            if (!(bool)R.TableList().Contains("Takeovers").Run(conn)) {
+            if (!(bool)R.TableList().Contains("Takeovers").Run(Conn)) {
                 Console.WriteLine("\"Takeovers\" table was not found, so it is being made.");
-                R.TableCreate("Takeovers").OptArg("primary_key", "Name").Run(conn);
+                R.TableCreate("Takeovers").OptArg("primary_key", "Name").Run(Conn);
             }
-            if (!(bool)R.TableList().Contains("Tickets").Run(conn)) {
+            if (!(bool)R.TableList().Contains("Tickets").Run(Conn)) {
                 Console.WriteLine("\"Tickets\" table was not found, so it is being made.");
-                R.TableCreate("Tickets").OptArg("primary_key", "ID").Run(conn);
+                R.TableCreate("Tickets").OptArg("primary_key", "ID").Run(Conn);
             }
-            if (!(bool)R.TableList().Contains("Twitter").Run(conn)) {
+            if (!(bool)R.TableList().Contains("Twitter").Run(Conn)) {
                 Console.WriteLine("\"Twitter\" table was not found, so it is being made.");
-                R.TableCreate("Twitter").OptArg("primary_key", "Account ID").Run(conn);
+                R.TableCreate("Twitter").OptArg("primary_key", "Account ID").Run(Conn);
             }
         }
         /*
@@ -242,13 +243,13 @@ namespace KekBot {
         [JsonProperty("dances")]
         private List<string> Dances;
         [JsonProperty("topkek")]
-        public string Topkek { get; }
+        public string Topkek { get; private set; }
         [JsonProperty("gold_trophy")]
-        public string GoldTrophy { get; }
+        public string GoldTrophy { get; private set; }
         [JsonProperty("silver_trophy")]
-        public string SilverTrophy { get; }
+        public string SilverTrophy { get; private set; }
         [JsonProperty("bronze_trophy")]
-        public string BronzeTrophy { get; }
+        public string BronzeTrophy { get; private set; }
         [JsonProperty("loadings")]
         private List<string> Loadings;
 

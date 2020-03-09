@@ -7,7 +7,8 @@ src/test/
 tickets.json
 profiles/
 profiles copy/
-config/
+config/config.json
+config/exclusiveBackgrounds.json
 /twitter4j.properties
 /kekbot.iml
 KekBot/bin/

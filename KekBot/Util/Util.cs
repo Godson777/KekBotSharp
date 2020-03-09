@@ -7,7 +7,7 @@ using DSharpPlus.Entities;
 namespace KekBot.Utils {
     static class Util {
 
-        internal static readonly System.Random Rng = new System.Random();
+        internal static readonly Random Rng = new Random();
 
         internal static T RandomElement<T>(this IEnumerable<T> list) => list.ElementAt(Rng.Next(list.Count()));
 
@@ -35,12 +35,11 @@ namespace KekBot.Utils {
             }
         }
 
-        internal static int ParseInt(string intStr, int fallback) {
-            try {
-                return int.Parse(intStr);
-            } catch (Exception e) {
-                return fallback;
-            }
+        internal static int ParseInt(string intStr, int fallback) => int.TryParse(intStr, out var n) ? n : fallback;
+
+        internal static void Panic(string msg = "") {
+            Console.Error.WriteLine(msg);
+            Environment.Exit(1);
         }
 
     }
