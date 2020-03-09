@@ -1,11 +1,12 @@
-﻿using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Attributes;
-using DSharpPlus.Entities;
-using KekBot.Attributes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Entities;
+using KekBot.Attributes;
+using KekBot.Utils;
 
 namespace KekBot.Command.Commands {
     public class FunCommands : BaseCommandModule {
@@ -14,7 +15,6 @@ namespace KekBot.Command.Commands {
         "As I see it, yes.", "Most likely.", "Outlook good.", "Yes.", "Signs point to yes.", "Reply hazy, try again.", "Ask again later.",
         "Better not tell you now.", "Cannot predict now.", "Concentrate and ask again.", "Don't count on it.", "My reply is no.", "My sources say no.",
         "Outlook not so good.", "Very doubtful." };
-        private static Random random = new Random();
 
         [Command("8ball"), Description("Ask the magic 8-ball a question!"), Category(Category.Fun)]
         public async Task EightBallCommand(CommandContext ctx, [RemainingText, Description("The question to ask to the magic 8-ball.")] string question) {
@@ -22,7 +22,7 @@ namespace KekBot.Command.Commands {
             if (question == null) {
                 await ctx.RespondAsync($"{emote.Think} I asked: Did {ctx.User.Username} give you a question?\n\n🎱 8-Ball's response: No, they didn't.");
             } else {
-                await ctx.RespondAsync($"{emote.Think} You asked: {question}\n\n🎱 8-Ball's response: {EightBall[random.Next(EightBall.Length)]}");
+                await ctx.RespondAsync($"{emote.Think} You asked: {question}\n\n🎱 8-Ball's response: {EightBall.RandomElement()}");
             }
         }
 
