@@ -85,6 +85,7 @@ namespace KekBot {
             Commands.RegisterCommands<TestCommandTwo>();
             Commands.RegisterCommands<HelpCommand>();
             Commands.RegisterCommands<FunCommands>();
+            Commands.RegisterCommands<WeebCommands>();
 
             await Discord.ConnectAsync();
             await Task.Delay(-1);
