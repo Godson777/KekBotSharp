@@ -45,9 +45,41 @@ namespace KekBot.Command.Commands {
             await ctx.RespondAsync(embed: builder.Build());
         }
 
+        private async Task BaseMention(CommandContext ctx, DiscordUser? user, string type, string msg, IEnumerable<string>? tags = null) {
+            if (user == null) {
+                await ctx.RespondAsync("You didn't @mention any users!");
+                return;
+            }
+
+            await ctx.TriggerTypingAsync();
+
+            var builder = new DiscordEmbedBuilder();
+            RandomData? image = await WeebClient.GetRandomAsync(
+                type: type,
+                tags: tags ?? Array.Empty<string>(),
+                //fileType: FileType.Any,
+                //hidden: false,
+                nsfw: ctx.Channel.IsNSFW ? NsfwSearch.True : NsfwSearch.False
+            );
+            if (image == null) {
+                builder.WithTitle(FailureMsg);
+            } else {
+                builder.WithTitle(string.Format(msg, user.Username, ctx.User.Username))
+                    .WithImageUrl(new Uri(image.Url));
+            }
+            builder.WithFooter(EmbedFooter);
+
+            await ctx.RespondAsync(embed: builder.Build());
+        }
+
         [Command("awoo"), Description("AWOOOOOOOOO"), Category(Category.Weeb)]
         internal async Task Awoo(CommandContext ctx) {
             await Base(ctx, type: "awoo", msg: "AWOOOOO");
+        }
+
+        [Command("bite"), Description("Bites the living HECK out of someone."), Category(Category.Weeb)]
+        internal async Task Bite(CommandContext ctx, DiscordUser? user = null) {
+            await BaseMention(ctx, user, type: "bite", msg: "%s was bit by %s!");
         }
 
     }
