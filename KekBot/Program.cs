@@ -47,7 +47,7 @@ namespace KekBot {
 
             try {
                 Conn = R.Connection().User(config.DbUser, config.DbPass).Connect();
-            } catch (ReqlDriverError) {
+            } catch (Exception e) when (e is ReqlDriverError || e is System.Net.Sockets.SocketException) {
                 Util.Panic("There was an error logging into rethinkdb, are you sure that it's on, or that you typed the info correctly?");
             }
 
