@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RethinkDb.Driver;
 using RethinkDb.Driver.Net;
+using Weeb.net;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Exceptions;
@@ -22,6 +23,9 @@ using KekBot.Utils;
 
 namespace KekBot {
     class Program {
+        // TODO: do something better with version
+        private const string Name = "KekBot";
+        private const string Version = "2.0";
 
         static DiscordClient? Discord;
         static CommandsNextExtension? Commands;
@@ -59,7 +63,7 @@ namespace KekBot {
 
             Discord = new DiscordClient(new DiscordConfiguration {
                 Token = config.Token,
-                TokenType = TokenType.Bot,
+                TokenType = DSharpPlus.TokenType.Bot,
                 LogLevel = LogLevel.Debug,
                 UseInternalLogHandler = true
             });
@@ -85,7 +89,14 @@ namespace KekBot {
             Commands.RegisterCommands<TestCommandTwo>();
             Commands.RegisterCommands<HelpCommand>();
             Commands.RegisterCommands<FunCommands>();
-            Commands.RegisterCommands<WeebCommands>();
+
+            if (config.WeebToken == null) {
+                Console.WriteLine("NOT registering weeb commands because no token was found >:(");
+            } else {
+                Console.WriteLine("Initializing weeb commands");
+                Commands.RegisterCommands<WeebCommands>();
+                await WeebCommands.InitializeAsync(name: Name, version: Version, token: config.WeebToken);
+            }
 
             await Discord.ConnectAsync();
             await Task.Delay(-1);
@@ -225,6 +236,9 @@ namespace KekBot {
         public string DbUser { get; private set; }
         [JsonProperty("dbPassword")]
         public string DbPass { get; private set; }
+
+        [JsonProperty("weebToken")]
+        public string WeebToken { get; private set; }
 
         private static Config _instance;
 
