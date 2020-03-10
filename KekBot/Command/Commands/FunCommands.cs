@@ -1,11 +1,10 @@
-﻿using DSharpPlus.CommandsNext;
+﻿using System;
+using System.Threading.Tasks;
+using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using KekBot.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+using KekBot.Utils;
 
 namespace KekBot.Command.Commands {
     public class FunCommands : BaseCommandModule {
@@ -22,7 +21,7 @@ namespace KekBot.Command.Commands {
             if (question == null) {
                 await ctx.RespondAsync($"{emote.Think} I asked: Did {ctx.User.Username} give you a question?\n\n🎱 8-Ball's response: No, they didn't.");
             } else {
-                await ctx.RespondAsync($"{emote.Think} You asked: {question}\n\n🎱 8-Ball's response: {EightBall[Random.Next(EightBall.Length)]}");
+                await ctx.RespondAsync($"{emote.Think} You asked: {question}\n\n🎱 8-Ball's response: {EightBall.RandomElement()}");
             }
         }
 
