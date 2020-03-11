@@ -13,6 +13,7 @@ using DSharpPlus.Interactivity;
 using KekBot.Attributes;
 using KekBot.Menu;
 using KekBot.Utils;
+using KekBot.Arguments;
 
 namespace KekBot.Command.Commands {
     class HelpCommand : BaseCommandModule {
@@ -71,7 +72,8 @@ namespace KekBot.Command.Commands {
 
             //I heard you like methods, so I put a method in your method.
             void AppendOverload(CommandOverload ovrld, Cmd? subcmd = null) {
-                var ovrldHasArgs = ovrld.Arguments.Count > 0;
+                var args = ovrld.Arguments.Where(arg => !arg.IsHidden());
+                var ovrldHasArgs = args.Any();
 
                 usage.Append("`");
                 usage.Append(cmd.Name);
@@ -80,7 +82,7 @@ namespace KekBot.Command.Commands {
                 if (ovrldHasArgs) {
                     usage.Append(" ");
                     //We have arguments, let's print them.
-                    usage.AppendJoin(" ", ovrld.Arguments.Select(arg => (arg.IsOptional && !arg.IsCustomRequired()) ? $"({arg.Name})" : $"[{arg.Name}]"));
+                    usage.AppendJoin(" ", args.Select(arg => (arg.IsOptional && !arg.IsCustomRequired()) ? $"({arg.Name})" : $"[{arg.Name}]"));
                 }
                 usage.Append("`");
 
@@ -90,7 +92,7 @@ namespace KekBot.Command.Commands {
                 if (count <= 6) {
                     //Second argument loop for descriptions (if count is short)
                     if (ovrldHasArgs)
-                        usage.AppendLines(ovrld.Arguments.Select(arg => $"`{arg.Name}`: {arg.Description}"));
+                        usage.AppendLines(args.Select(arg => $"`{arg.Name}`: {arg.Description}"));
                     usage.AppendLine();
                 }
             }

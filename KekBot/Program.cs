@@ -28,6 +28,7 @@ namespace KekBot {
         private const string Version = "2.0";
 
         static DiscordClient? Discord;
+        static CommandsNextConfiguration? CmdsNextCfg;
         static CommandsNextExtension? Commands;
         static readonly ConcurrentDictionary<ulong, string> PrefixSettings = new ConcurrentDictionary<ulong, string>();
         static InteractivityExtension? Interactivity;
@@ -70,17 +71,23 @@ namespace KekBot {
 
             Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
-            Commands = Discord.UseCommandsNext(new CommandsNextConfiguration {
+            CmdsNextCfg = new MyCmdsConfig {
                 EnableMentionPrefix = true,
                 PrefixResolver = ResolvePrefixAsync,
                 IgnoreExtraArguments = true,
-                EnableDefaultHelp = false
-            });
+                EnableDefaultHelp = false,
+                UseDefaultCommandHandler = false
+            };
+            Commands = Discord.UseCommandsNext(CmdsNextCfg);
+
+            Commands.Client.MessageCreated += HandleCommandsAsync;
 
             Commands.CommandErrored += PrintError;
 
             Commands.RegisterConverter(new ChoicesConverter());
             Commands.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
+            Commands.RegisterConverter(new FlagsConverter());
+            //Commands.RegisterUserFriendlyTypeName<Arguments.Flags>("");
 
             Commands.RegisterCommands<TestCommand>();
             Commands.RegisterCommands<PickCommand>();
@@ -102,6 +109,14 @@ namespace KekBot {
             await Task.Delay(-1);
         }
 
+        private class MyCmdsConfig {
+            public bool EnableMentionPrefix { get; internal set; }
+            public Func<DiscordMessage, Task<int>> PrefixResolver { get; internal set; }
+            public bool IgnoreExtraArguments { get; internal set; }
+            public bool EnableDefaultHelp { get; internal set; }
+            public bool UseDefaultCommandHandler { get; internal set; }
+        }
+
         private async static Task PrintError(CommandErrorEventArgs e) {
             if (e.Exception is CommandNotFoundException) return;
             await e.Context.Channel.SendMessageAsync($"An error occured: {e.Exception.Message}");
@@ -117,6 +132,44 @@ namespace KekBot {
                 : msg.GetStringPrefixLength("p$");
 
             return Task.FromResult(pLen);
+        }
+
+        private static async Task HandleCommandsAsync(DSharpPlus.EventArgs.MessageCreateEventArgs e) {
+            if (e.Author.IsBot) // bad bot
+                return;
+
+            if (!this.Config.EnableDms && e.Channel.IsPrivate)
+                return;
+
+            var mpos = -1;
+            if (this.Config.EnableMentionPrefix)
+                mpos = e.Message.GetMentionPrefixLength(this.Client.CurrentUser);
+
+            if (this.Config.StringPrefixes?.Any() == true)
+                foreach (var pfix in this.Config.StringPrefixes)
+                    if (mpos == -1 && !string.IsNullOrWhiteSpace(pfix))
+                        mpos = e.Message.GetStringPrefixLength(pfix, this.Config.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+
+            if (mpos == -1 && this.Config.PrefixResolver != null)
+                mpos = await this.Config.PrefixResolver(e.Message).ConfigureAwait(false);
+
+            if (mpos == -1)
+                return;
+
+            var pfx = e.Message.Content.Substring(0, mpos);
+            var cnt = e.Message.Content.Substring(mpos);
+
+            var __ = 0;
+            var fname = cnt.ExtractNextArgument(ref __);
+
+            var cmd = this.FindCommand(cnt, out var args);
+            var ctx = this.CreateContext(e.Message, pfx, cmd, args);
+            if (cmd == null) {
+                await this._error.InvokeAsync(new CommandErrorEventArgs { Context = ctx, Exception = new CommandNotFoundException(fname) }).ConfigureAwait(false);
+                return;
+            }
+
+            _ = Task.Run(async () => await this.ExecuteCommandAsync(ctx));
         }
 
         /**
