@@ -20,6 +20,7 @@ using DSharpPlus.Interactivity;
 using KekBot.ArgumentResolvers;
 using KekBot.Command.Commands;
 using KekBot.Utils;
+using System.Linq;
 
 namespace KekBot {
     class Program {
@@ -28,7 +29,6 @@ namespace KekBot {
         private const string Version = "2.0";
 
         static DiscordClient? Discord;
-        static CommandsNextConfiguration? CmdsNextCfg;
         static CommandsNextExtension? Commands;
         static readonly ConcurrentDictionary<ulong, string> PrefixSettings = new ConcurrentDictionary<ulong, string>();
         static InteractivityExtension? Interactivity;
@@ -71,18 +71,16 @@ namespace KekBot {
 
             Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
-            CmdsNextCfg = new MyCmdsConfig {
+            Commands = Discord.UseCommandsNext(new CommandsNextConfiguration {
                 EnableMentionPrefix = true,
                 PrefixResolver = ResolvePrefixAsync,
                 IgnoreExtraArguments = true,
-                EnableDefaultHelp = false,
-                UseDefaultCommandHandler = false
-            };
-            Commands = Discord.UseCommandsNext(CmdsNextCfg);
+                EnableDefaultHelp = false
+            });
 
-            Commands.Client.MessageCreated += HandleCommandsAsync;
+            //Commands.Client.MessageCreated += HandleCommandsAsync;
 
-            Commands.CommandErrored += PrintError;
+            Commands.CommandErrored += HandleError;
 
             Commands.RegisterConverter(new ChoicesConverter());
             Commands.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
@@ -117,10 +115,30 @@ namespace KekBot {
             public bool UseDefaultCommandHandler { get; internal set; }
         }
 
-        private async static Task PrintError(CommandErrorEventArgs e) {
-            if (e.Exception is CommandNotFoundException) return;
-            await e.Context.Channel.SendMessageAsync($"An error occured: {e.Exception.Message}");
-            Console.Error.WriteLine(e.Exception);
+        private async static Task HandleError(CommandErrorEventArgs args) {
+            var error = args.Exception;
+            if (error is CommandNotFoundException e) {
+                await HandleUnknownCommand(args.Context, e.CommandName);
+                return;
+            }
+
+            await args.Context.Channel.SendMessageAsync($"An error occured: {error.Message}");
+            Console.Error.WriteLine(error);
+        }
+
+        private async static Task HandleUnknownCommand(CommandContext ctx, string cmdName) {
+            if (WeebCommands.FakeCommands.Contains(cmdName)) {
+                if (WeebCommands.FakeCommandInfo[cmdName].MentionsUser) {
+                    var rawArgs = ctx.RawArguments;
+                    var user = rawArgs.Count >= 1
+                        ? await rawArgs[0].ConvertArgAsync<DiscordMember>(ctx)
+                        : null;
+                    await WeebCommands.HandleFakeCommand(ctx, cmdName, user);
+                } else {
+                    await WeebCommands.HandleFakeCommand(ctx, cmdName);
+                }
+                return;
+            }
         }
 
         private static Task<int> ResolvePrefixAsync(DiscordMessage msg) {
@@ -134,43 +152,43 @@ namespace KekBot {
             return Task.FromResult(pLen);
         }
 
-        private static async Task HandleCommandsAsync(DSharpPlus.EventArgs.MessageCreateEventArgs e) {
-            if (e.Author.IsBot) // bad bot
-                return;
+        //private static async Task HandleCommandsAsync(DSharpPlus.EventArgs.MessageCreateEventArgs e) {
+        //    if (e.Author.IsBot) // bad bot
+        //        return;
 
-            if (!this.Config.EnableDms && e.Channel.IsPrivate)
-                return;
+        //    if (e.Channel.IsPrivate) // DMs
+        //        return;
 
-            var mpos = -1;
-            if (this.Config.EnableMentionPrefix)
-                mpos = e.Message.GetMentionPrefixLength(this.Client.CurrentUser);
+        //    var mpos = -1;
+        //    if (this.Config.EnableMentionPrefix)
+        //        mpos = e.Message.GetMentionPrefixLength(this.Client.CurrentUser);
 
-            if (this.Config.StringPrefixes?.Any() == true)
-                foreach (var pfix in this.Config.StringPrefixes)
-                    if (mpos == -1 && !string.IsNullOrWhiteSpace(pfix))
-                        mpos = e.Message.GetStringPrefixLength(pfix, this.Config.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+        //    if (this.Config.StringPrefixes?.Any() == true)
+        //        foreach (var pfix in this.Config.StringPrefixes)
+        //            if (mpos == -1 && !string.IsNullOrWhiteSpace(pfix))
+        //                mpos = e.Message.GetStringPrefixLength(pfix, this.Config.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
 
-            if (mpos == -1 && this.Config.PrefixResolver != null)
-                mpos = await this.Config.PrefixResolver(e.Message).ConfigureAwait(false);
+        //    if (mpos == -1 && this.Config.PrefixResolver != null)
+        //        mpos = await this.Config.PrefixResolver(e.Message).ConfigureAwait(false);
 
-            if (mpos == -1)
-                return;
+        //    if (mpos == -1)
+        //        return;
 
-            var pfx = e.Message.Content.Substring(0, mpos);
-            var cnt = e.Message.Content.Substring(mpos);
+        //    var pfx = e.Message.Content.Substring(0, mpos);
+        //    var cnt = e.Message.Content.Substring(mpos);
 
-            var __ = 0;
-            var fname = cnt.ExtractNextArgument(ref __);
+        //    var __ = 0;
+        //    var fname = cnt.ExtractNextArgument(ref __);
 
-            var cmd = this.FindCommand(cnt, out var args);
-            var ctx = this.CreateContext(e.Message, pfx, cmd, args);
-            if (cmd == null) {
-                await this._error.InvokeAsync(new CommandErrorEventArgs { Context = ctx, Exception = new CommandNotFoundException(fname) }).ConfigureAwait(false);
-                return;
-            }
+        //    var cmd = Commands!.FindCommand(cnt, out var args);
+        //    var ctx = this.CreateContext(e.Message, pfx, cmd, args);
+        //    if (cmd == null) {
+        //        await this._error.InvokeAsync(new CommandErrorEventArgs { Context = ctx, Exception = new CommandNotFoundException(fname) }).ConfigureAwait(false);
+        //        return;
+        //    }
 
-            _ = Task.Run(async () => await this.ExecuteCommandAsync(ctx));
-        }
+        //    _ = Task.Run(async () => await this.ExecuteCommandAsync(ctx));
+        //}
 
         /**
      * Verifies if the all the tables exist in our database.
