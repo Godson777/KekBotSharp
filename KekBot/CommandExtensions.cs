@@ -1,16 +1,15 @@
 ﻿using System.Linq;
-using Cmd = DSharpPlus.CommandsNext.Command;
-using Arg = DSharpPlus.CommandsNext.CommandArgument;
-using KekBot.Attributes;
 using DSharpPlus.CommandsNext;
+using KekBot.Attributes;
 
 namespace KekBot {
     public static class CommandExtensions {
 
-        public static Category GetCategory(this Cmd command) =>
-            command?.CustomAttributes.OfType<CategoryAttribute>().FirstOrDefault()?.Category ?? Category.Uncategorized;
+        public static Category GetCategory(this Command cmd) =>
+            cmd?.CustomAttributes.OfType<CategoryAttribute>().FirstOrDefault()?.Category ?? Category.Uncategorized;
 
-        public static bool IsCustomRequired(this Arg argument) => argument?.CustomAttributes.OfType<RequiredAttribute>().Any() ?? false;
+        public static bool IsCustomRequired(this CommandArgument arg) =>
+            arg?.CustomAttributes.OfType<RequiredAttribute>().Any() ?? false;
 
     }
 }

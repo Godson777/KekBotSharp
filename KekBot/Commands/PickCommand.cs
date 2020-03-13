@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using KekBot.Utils;
 
-namespace KekBot {
+namespace KekBot.Commands {
     class PickCommand : BaseCommandModule {
 
         [Command("pick"), Aliases("choose", "decide"), Description("Has KekBot pick one of X choices for you.")]

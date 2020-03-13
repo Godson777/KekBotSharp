@@ -2,7 +2,7 @@
 using DSharpPlus.CommandsNext.Attributes;
 using System.Threading.Tasks;
 
-namespace KekBot {
+namespace KekBot.Commands {
     public class PingCommand : BaseCommandModule {
 
         [Command("ping"), Description("Returns with the bot's ping."), Aliases("pong")]
