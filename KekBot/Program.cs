@@ -13,6 +13,8 @@ using DSharpPlus.Interactivity;
 using KekBot.ArgumentResolvers;
 using KekBot.Command.Commands;
 using KekBot.Utils;
+using DSharpPlus.CommandsNext.Builders;
+using DSharpPlus.EventArgs;
 
 namespace KekBot {
     class Program {
@@ -26,8 +28,6 @@ namespace KekBot {
 
 
         static void Main(string[] args) {
-            PrefixSettings.AddOrUpdate(283100276125073409ul, "c#", (k, vold) => "p$");
-            PrefixSettings.AddOrUpdate(421681525227257878ul, "d$", (k, vold) => "p$");
             MainAsync(args).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
@@ -50,6 +50,7 @@ namespace KekBot {
                 Console.WriteLine("Database wasn't found, so it was created.");
             }
             Conn.Use(config.Db);
+            VerifyTables();
 
             Discord = new DiscordClient(new DiscordConfiguration {
                 Token = config.Token,
@@ -68,6 +69,7 @@ namespace KekBot {
             });
 
             Commands.CommandErrored += PrintError;
+            Discord.GuildAvailable += GuildAvailable;
 
             Commands.RegisterConverter(new ChoicesConverter());
             Commands.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
@@ -79,6 +81,7 @@ namespace KekBot {
             Commands.RegisterCommands<TestCommandTwo>();
             Commands.RegisterCommands<HelpCommand>();
             Commands.RegisterCommands<FunCommands>();
+            Commands.RegisterCommands<QuoteCommand>();
 
             await Discord.ConnectAsync();
             await Task.Delay(-1);
@@ -86,8 +89,19 @@ namespace KekBot {
 
         private async static Task PrintError(CommandErrorEventArgs e) {
             if (e.Exception is CommandNotFoundException) return;
+            if (e.Exception is ArgumentException) {
+                var cmd = Commands.FindCommand($"help {e.Command.QualifiedName}", out var args);
+                CommandContext fakectx = Commands.CreateFakeContext(e.Context.Member, e.Context.Channel, e.Context.Message.Content, e.Context.Prefix, cmd, args);
+                await Commands.ExecuteCommandAsync(fakectx);
+                return;
+            }
             await e.Context.Channel.SendMessageAsync($"An error occured: {e.Exception.Message}");
             Console.Error.WriteLine(e.Exception);
+        }
+
+        private async static Task GuildAvailable(GuildCreateEventArgs e) {
+            var set = await LegacySettings.Get(e.Guild);
+            if (set.Prefix != null) PrefixSettings.AddOrUpdate(e.Guild.Id, set.Prefix, (k, old) => set.Prefix);
         }
 
         private static Task<int> ResolvePrefixAsync(DiscordMessage msg) {
@@ -101,10 +115,12 @@ namespace KekBot {
             return Task.FromResult(pLen);
         }
 
+
         /**
      * Verifies if the all the tables exist in our database.
      */
-        private static void verifyTables() {
+        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Yeah yeah, I'll make a proper logger later.")]
+        private static void VerifyTables() {
             if (!(bool)R.TableList().Contains("Profiles").Run(Conn)) {
                 Console.WriteLine("\"Profiles\" table was not found, so it is being made.");
                 R.TableCreate("Profiles").OptArg("primary_key", "User ID").Run(Conn);

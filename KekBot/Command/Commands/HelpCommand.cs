@@ -49,24 +49,24 @@ namespace KekBot.Command.Commands {
             //Prepare ourselves for usage
             var usage = new StringBuilder();
             //The total count of subcommands and overloads.
-            var count = cmd.Overloads.Count;
-
-            //Do we have any subcommands?
-            if (cmd is CommandGroup group) {
-                count += group.Children.Count;
-                //The following loop handles subcommands and their appropriate usage.
-                foreach (var subcmd in group.Children) {
-                    if (subcmd.Overloads.Count > 1 || subcmd is CommandGroup)
-                        usage.Append($"`{cmd.Name} {subcmd.Name}`: Visit `help {cmd.Name} {subcmd.Name}` for more information.");
-                    else
-                        AppendOverload(subcmd.Overloads.Single(), subcmd);
-                }
-            }
+            //LITERALLY THE CMD IS COMMANDGROUP THING IS ONLY HERE BECAUSE VS HATED WHEN I TRIED TO DO ANYTHING ELSE.
+            var count = cmd.Overloads.Count + (cmd is CommandGroup ? (cmd as CommandGroup).Children.Count : 0);
 
             //The following loop handles overloads.
             foreach (var ovrld in cmd.Overloads) {
                 if (ovrld.Priority >= 0)
                     AppendOverload(ovrld);
+            }
+
+            //Do we have any subcommands?
+            if (cmd is CommandGroup group) {
+                //The following loop handles subcommands and their appropriate usage.
+                foreach (var subcmd in group.Children) {
+                    if (subcmd.Overloads.Count > 1 || subcmd is CommandGroup)
+                        usage.AppendLine($"`{cmd.Name} {subcmd.Name}`: Visit `help {cmd.Name} {subcmd.Name}` for more information.");
+                    else
+                        AppendOverload(subcmd.Overloads.Single(), subcmd);
+                }
             }
 
             //I heard you like methods, so I put a method in your method.
