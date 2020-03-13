@@ -44,7 +44,7 @@ namespace KekBot.Utils {
         /// <summary>
         /// Use an arg resolver to parse an argument.
         /// </summary>
-        internal static async Task<Arg?> ConvertArgAsync<Arg>(this string value, CommandContext ctx) where Arg : class {
+        internal static async Task<Arg?> ConvertArgAsync<Arg>(string value, CommandContext ctx) where Arg : class {
             try {
                 // God, this method sucks. And there's no alternative, as far as I can tell;
                 // the property that contains the registered converters is private.
@@ -56,8 +56,8 @@ namespace KekBot.Utils {
         /// <summary>
         /// Use an arg resolver to parse an argument. Just make sure to include whatever it needs.
         /// </summary>
-        internal static Task<Arg?> ConvertArgAsync<Arg>(this string value, CommandsNextExtension cnext,
-            DiscordMessage? msg = null, string prefix = "", DSharpPlus.CommandsNext.Command? cmd = null, string? rawArgs = null)
+        internal static Task<Arg?> ConvertArgAsync<Arg>(string value, CommandsNextExtension cnext,
+            DiscordMessage? msg = null, string prefix = "", Command? cmd = null, string? rawArgs = null)
             where Arg : class => ConvertArgAsync<Arg>(value,
                 cnext.CreateContext(msg: msg, prefix: prefix, cmd: cmd, rawArguments: rawArgs));
 
@@ -72,6 +72,38 @@ namespace KekBot.Utils {
 
         internal static Optional<T> ToOptional<T>(this T? maybeValue) where T : class =>
             maybeValue is T value ? Optional.FromValue(value) : Optional.FromNoValue<T>();
+
+        /// <summary>
+        /// Returns the index if it was found (nonnegative), else a fallback int.
+        /// </summary>
+        internal static int FoundIndexOr(this int n, int fallback) => n < 0 ? fallback : n;
+
+        /// <summary>
+        /// Returns the zero-based index of <em>the end of</em> the first occurrence of the specified string.
+        /// </summary>
+        internal static int IndexOfEnd(this string s, string value, StringComparison comparisonType) {
+            var i = s.IndexOf(value, comparisonType);
+            return i < 0
+                ? i
+                : i + value.Length;
+        }
+
+        /// <summary>
+        /// Returns the zero-based index of <em>the end of</em> the first occurrence of the specified string.
+        /// </summary>
+        internal static int IndexOfEnd(this string s, string value, int startIndex, StringComparison comparisonType) {
+            var i = s.IndexOf(value, startIndex, comparisonType);
+            return i < 0
+                ? i
+                : i + value.Length;
+        }
+
+        /// <summary>
+        /// Returns the zero-based index of <em>the end of</em> the first occurrence of the specified string,
+        /// according to binary comparison.
+        /// </summary>
+        internal static int FastIndexOfEnd(this string s, string value, int startIndex = 0) =>
+            s.IndexOfEnd(value, startIndex, StringComparison.Ordinal);
 
         internal static string AuthorName(this DiscordMessage msg) => msg.Author switch {
             DiscordMember m => m.DisplayName,

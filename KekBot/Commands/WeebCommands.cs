@@ -13,6 +13,7 @@ using KekBot.Arguments;
 using KekBot.Attributes;
 using KekBot.Lib;
 using KekBot.Utils;
+using System.Collections.Generic;
 
 namespace KekBot.Commands {
     class WeebCommands : IHasFakeCommands {
@@ -104,14 +105,17 @@ namespace KekBot.Commands {
 
         async Task IHasFakeCommands.HandleFakeCommand(CommandContext ctx, string cmdName) {
             Util.Assert(FakeCommands.Contains(cmdName), elsePanicWith: "how did this happen");
-            Util.Assert(FakeCommandInfo.Any(cmd => cmd.Name == cmdName), elsePanicWith: "how did this happen");
+            Util.Assert(FakeCommandInfo.Any(cmdInfo => cmdInfo.Name == cmdName), elsePanicWith: "how did this happen");
 
             var cmdInfo = FakeCommandInfo.First(cmdInfo => cmdInfo.Name == cmdName);
             if (cmdInfo.MentionsUser) {
-                var rawArgs = ctx.RawArguments;
-                var user = rawArgs.Count >= 1
-                    ? await rawArgs[0].ConvertArgAsync<DiscordMember>(ctx)
-                    : null;
+                var content = ctx.Message.Content;
+                var afterPrefix = content.FastIndexOfEnd(ctx.Prefix).FoundIndexOr(0);
+                var afterCmd = content.FastIndexOfEnd(cmdName, afterPrefix).FoundIndexOr(0);
+                var argStr = content.Substring(afterCmd).Trim();
+                var user = argStr.Length == 0
+                    ? null
+                    : await Util.ConvertArgAsync<DiscordMember>(argStr, ctx);
                 await BaseMention(ctx, user, type: cmdName, msg: cmdInfo.Msg);
             } else {
                 await Base(ctx, type: cmdName, msg: cmdInfo.Msg);
