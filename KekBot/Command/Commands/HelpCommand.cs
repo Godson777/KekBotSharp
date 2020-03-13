@@ -16,7 +16,6 @@ using KekBot.Menu;
 using KekBot.Utils;
 
 namespace KekBot.Command.Commands {
-    // TODO: handle WeebCommands "fake" commands
     class HelpCommand : BaseCommandModule {
 
         private const string tagline = "KekBot, your friendly meme based bot!";
