@@ -13,7 +13,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace KekBot.Command.Commands {
+namespace KekBot.Commands {
     [Group("quote"), Description("Grabs a random quote from a list of quotes made in your server."), Category(Category.Fun), Aliases("q")]
     public class QuoteCommand : BaseCommandModule {
         [GroupCommand, Priority(0)]
