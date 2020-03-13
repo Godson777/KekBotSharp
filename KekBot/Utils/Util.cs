@@ -73,8 +73,6 @@ namespace KekBot.Utils {
         internal static Optional<T> ToOptional<T>(this T? maybeValue) where T : class =>
             maybeValue is T value ? Optional.FromValue(value) : Optional.FromNoValue<T>();
 
-        internal static Task<T?> NonNull<T>(this Task<T?>? task) where T : class => task ?? Task.FromResult<T?>(null);
-
         internal static string AuthorName(this DiscordMessage msg) => msg.Author switch {
             DiscordMember m => m.DisplayName,
             DiscordUser u => u.Username,
