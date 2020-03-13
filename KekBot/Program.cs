@@ -125,14 +125,6 @@ namespace KekBot {
             }
         }
 
-        private class MyCmdsConfig {
-            public bool EnableMentionPrefix { get; internal set; }
-            public Func<DiscordMessage, Task<int>> PrefixResolver { get; internal set; }
-            public bool IgnoreExtraArguments { get; internal set; }
-            public bool EnableDefaultHelp { get; internal set; }
-            public bool UseDefaultCommandHandler { get; internal set; }
-        }
-
         private async static Task HandleError(CommandErrorEventArgs args) {
             var error = args.Exception;
             if (error is CommandNotFoundException e) {
