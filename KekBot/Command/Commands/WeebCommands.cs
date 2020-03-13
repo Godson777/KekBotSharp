@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -119,11 +118,6 @@ namespace KekBot.Command.Commands {
                 await Base(ctx, type: cmdName, msg: cmdInfo.Msg);
             }
         }
-
-        // TODO: remove
-        //internal static async Task HandleFakeCommand(CommandContext ctx, string type, DiscordMember? user) {
-        //    await BaseMention(ctx, user, type: type, msg: FakeCommandInfo[type].Msg);
-        //}
 
         private static NsfwSearch CheckNsfw(CommandContext ctx, FlagArgs flags) =>
             !ctx.Channel.IsNSFW

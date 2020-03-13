@@ -12,12 +12,6 @@ namespace KekBot.Lib {
     }
 
     internal class FakeCommandsDictionary : Dictionary<string, IHasFakeCommands> {
-        // TODO: cache this dictionary
-        //public IReadOnlyDictionary<string, DSharpPlus.CommandsNext.Command> AllCommands(CommandContext ctx) => this
-        //    .Cast<KeyValuePair<string, DSharpPlus.CommandsNext.Command>>()
-        //    .Concat(ctx.CommandsNext.RegisteredCommands)
-        //    .ToDictionary(pair => pair.Key, pair => pair.Value);
-
         /// <summary>
         /// Returns true if the fake command "exists".
         /// </summary>

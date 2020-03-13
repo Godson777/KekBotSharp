@@ -30,13 +30,6 @@ namespace KekBot.Utils {
         /// </summary>
         internal static string? NonEmpty(this string s) => s.Length == 0 ? null : s;
 
-        // TODO: unused.
-        // Idk, just disable the warning.
-#pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
-        internal static Dictionary<K, V> ToDicktionary<K, V>(this IEnumerable<(K, V)> pairs) =>
-#pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
-            pairs.ToDictionary(pair => pair.Item1, pair => pair.Item2);
-
         /// <summary>
         /// Appends copies of the specified strings followed by the default line terminator
         /// to the end of the current System.Text.StringBuilder object.
@@ -47,10 +40,6 @@ namespace KekBot.Utils {
             foreach (var line in lines) s.AppendLine(line);
             return s;
         }
-
-        // TODO: unused.
-        internal static string[] SplitOnWhitespace(this string s, StringSplitOptions options = StringSplitOptions.RemoveEmptyEntries) =>
-            s.Split(null as char[], options);
 
         /// <summary>
         /// Use an arg resolver to parse an argument.
