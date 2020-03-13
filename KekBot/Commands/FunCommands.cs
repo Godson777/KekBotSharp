@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
@@ -12,6 +13,7 @@ namespace KekBot.Commands {
         "As I see it, yes.", "Most likely.", "Outlook good.", "Yes.", "Signs point to yes.", "Reply hazy, try again.", "Ask again later.",
         "Better not tell you now.", "Cannot predict now.", "Concentrate and ask again.", "Don't count on it.", "My reply is no.", "My sources say no.",
         "Outlook not so good.", "Very doubtful." };
+        private static Random Random = new Random();
 
         [Command("8ball"), Description("Ask the magic 8-ball a question!"), Category(Category.Fun)]
         public async Task EightBallCommand(CommandContext ctx, [RemainingText, Description("The question to ask to the magic 8-ball.")] string question) {
@@ -29,6 +31,13 @@ namespace KekBot.Commands {
             if (user == null) await ctx.RespondAsync("peepee");
             else await ctx.RespondAsync(user.AvatarUrl);
         }
+
+        [Command("flip"), Description("Flips a coin."), Category(Category.Fun)]
+        public async Task FlipCommand(CommandContext ctx) {
+            string coin = Random.Next(2) == 0 ? "HEADS" : "TAILS";
+            await ctx.RespondAsync($"{ctx.User.Username} flipped the coin and it landed on... ***{coin}!***");
+        }
+        
 
     }
 }
