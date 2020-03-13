@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Entities;
 using DSharpPlus.Entities;
 
 namespace KekBot.Utils {
@@ -12,12 +14,23 @@ namespace KekBot.Utils {
 
         internal static readonly Random Rng = new Random();
 
-        internal static T RandomElement<T>(this IEnumerable<T> list) => list.ElementAt(Rng.Next(list.Count()));
+        /// <summary>
+        /// Returns a random element from the collection.
+        /// </summary>
+        internal static T RandomElement<T>(this IEnumerable<T> coll) => coll.ElementAt(Rng.Next(coll.Count()));
 
-        internal static IEnumerable<T>? NonEmpty<T>(this IEnumerable<T> list) => list.Any() ? list : null;
+        /// <summary>
+        /// Returns null if the collection is empty.
+        /// </summary>
+        internal static IEnumerable<T>? NonEmpty<T>(this IEnumerable<T> coll) => coll.Any() ? coll : null;
+
         // string is IEnumerable<char>, but without this overload, the return is an inconvenient type.
+        /// <summary>
+        /// Returns null if the string is empty.
+        /// </summary>
         internal static string? NonEmpty(this string s) => s.Length == 0 ? null : s;
 
+        // TODO: unused.
         // Idk, just disable the warning.
 #pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
         internal static Dictionary<K, V> ToDicktionary<K, V>(this IEnumerable<(K, V)> pairs) =>
@@ -28,7 +41,6 @@ namespace KekBot.Utils {
         /// Appends copies of the specified strings followed by the default line terminator
         /// to the end of the current System.Text.StringBuilder object.
         /// </summary>
-        /// <param name="s">The current System.Text.StringBuilder object/param>
         /// <param name="lines">The strings to append.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
         internal static StringBuilder AppendLines(this StringBuilder s, IEnumerable<string> lines) {
@@ -36,9 +48,13 @@ namespace KekBot.Utils {
             return s;
         }
 
+        // TODO: unused.
         internal static string[] SplitOnWhitespace(this string s, StringSplitOptions options = StringSplitOptions.RemoveEmptyEntries) =>
             s.Split(null as char[], options);
 
+        /// <summary>
+        /// Use an arg resolver to parse an argument.
+        /// </summary>
         internal static async Task<Arg?> ConvertArgAsync<Arg>(this string value, CommandContext ctx) where Arg : class {
             try {
                 // God, this method sucks. And there's no alternative, as far as I can tell;
@@ -48,6 +64,13 @@ namespace KekBot.Utils {
                 return default;
             }
         }
+        /// <summary>
+        /// Use an arg resolver to parse an argument. Just make sure to include whatever it needs.
+        /// </summary>
+        internal static Task<Arg?> ConvertArgAsync<Arg>(this string value, CommandsNextExtension cnext,
+            DiscordMessage? msg = null, string prefix = "", DSharpPlus.CommandsNext.Command? cmd = null, string? rawArgs = null)
+            where Arg : class => ConvertArgAsync<Arg>(value,
+                cnext.CreateContext(msg: msg, prefix: prefix, cmd: cmd, rawArguments: rawArgs));
 
         internal static T? ToNullableClass<T>(this Optional<T> opt)
             where T : class => opt.HasValue ? opt.Value : null;
@@ -68,14 +91,14 @@ namespace KekBot.Utils {
             DiscordUser u => u.Username,
         };
 
-        //internal static Lib.CommandsKextExtension UseCommandsKext(this DiscordClient client, CommandsNextConfiguration cfg) {
-        //    if (client.GetExtension<Lib.CommandsKextExtension>() != null)
-        //        throw new InvalidOperationException("CommandsKext is already enabled for that client.");
-
-        //    var cnext = new Lib.CommandsKextExtension(cfg);
-        //    client.AddExtension(cnext);
-        //    return cnext;
-        //}
+        /// <summary>
+        /// Get a command module of the given type from CNext.RegisteredCommands. Panics if it can't be found.
+        /// </summary>
+        internal static T GetModule<T>(this IReadOnlyDictionary<string, DSharpPlus.CommandsNext.Command> cmds)
+            where T : BaseCommandModule =>
+                cmds.Values.First(cmd => cmd.Module.ModuleType == typeof(T)).Module is T mod
+                    ? mod
+                    : throw Panic("couldn't get module");
 
         internal static IEnumerable<int> Range(int start = 0, int end = int.MaxValue, int step = 1) {
             for (int n = start; n < end; n += step) {
@@ -83,13 +106,37 @@ namespace KekBot.Utils {
             }
         }
 
+        internal static ImmutableArray<T> ImmutableArrayFromSingle<T>(T value) => ImmutableArray.Create(new[] { value });
+
         internal static int ParseInt(string intStr, int fallback) => int.TryParse(intStr, out var n) ? n : fallback;
 
-        internal static void Panic(string msg = "") {
-            Console.Error.WriteLine(msg);
-            Environment.Exit(1);
+
+        /// <summary>
+        /// This only exists for type inference.
+        /// </summary>
+        [Serializable]
+        public class PanicException : Exception {
+            public PanicException() { }
+            public PanicException(string message) : base(message) { }
+            public PanicException(string message, Exception inner) : base(message, inner) { }
+            protected PanicException(
+              System.Runtime.Serialization.SerializationInfo info,
+              System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         }
 
+        /// <summary>
+        /// Terminate the program, optionally with a message.
+        /// Throw the returned exception to get better type inference from C#.
+        /// </summary>
+        internal static PanicException Panic(string msg = "") {
+            Console.Error.WriteLine(msg);
+            Environment.Exit(1);
+            return new PanicException(message: msg);
+        }
+
+        /// <summary>
+        /// Asserts a condition is true, and panics otherwise.
+        /// </summary>
         internal static void Assert(bool condition, string elsePanicWith = "") {
             if (!condition) {
                 Panic(elsePanicWith);

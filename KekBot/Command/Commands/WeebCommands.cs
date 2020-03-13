@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -11,23 +12,32 @@ using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using KekBot.Arguments;
 using KekBot.Attributes;
+using KekBot.Lib;
 using KekBot.Utils;
 
 namespace KekBot.Command.Commands {
-    class WeebCommands : BaseCommandModule {
-        internal struct CmdInfo {
-            public readonly string Type;
-            public readonly string Description;
-            public readonly string Msg;
-            public readonly bool MentionsUser;
+    class WeebCommands : IHasFakeCommands {
+        internal struct WeebCmdInfo : ICommandInfo {
+            public string Name { get; }
+            public ImmutableArray<string> Aliases => ImmutableArray.Create(Array.Empty<string>());
+            public string Description { get; }
+            public Category Category => Category.Weeb;
+            public ImmutableArray<ICommandOverloadInfo> Overloads { get; }
+            public DSharpPlus.CommandsNext.Command? Cmd => null;
+
+            public string Msg { get; }
+            public bool MentionsUser { get; }
 
             private static readonly Regex FormatThingies = new Regex("{(?<num>\\d*)}");
 
             [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Only thrown at bot startup")]
-            public CmdInfo(string type, string description, string msg, bool mentionsUser = false) {
-                Type = type;
+            public WeebCmdInfo(string type, string description, string msg, bool mentionsUser = false) {
+                Name = type;
                 Description = description;
                 if (mentionsUser) {
+                    Overloads = Util.ImmutableArrayFromSingle<ICommandOverloadInfo>(
+                        new WeebOverloadMention()
+                    );
                     foreach (var match in FormatThingies.Matches(msg).AsEnumerable()) {
                         if (!int.TryParse(match.Groups["num"].Value, out var num) ||
                             (num != 0 && num != 1)) {
@@ -35,23 +45,53 @@ namespace KekBot.Command.Commands {
                                 message: "Msg cannot reference substitutions other than 0 and 1");
                         }
                     }
+                } else {
+                    Overloads = Util.ImmutableArrayFromSingle<ICommandOverloadInfo>(
+                        new WeebOverload()
+                    );
                 }
                 Msg = msg;
                 MentionsUser = mentionsUser;
             }
+
+            public bool Equals([AllowNull] ICommandInfo other) => Name == other.Name;
         }
 
-        internal static readonly Dictionary<string, CmdInfo> FakeCommandInfo = new CmdInfo[] {
-            new CmdInfo("awoo", "AWOOOOOOOOO",
+        internal struct WeebOverload : ICommandOverloadInfo {
+            public ImmutableArray<ICommandArgumentInfo> Arguments => ImmutableArray<ICommandArgumentInfo>.Empty;
+            public int Priority => 0;
+        }
+
+        internal struct WeebOverloadMention : ICommandOverloadInfo {
+            public ImmutableArray<ICommandArgumentInfo> Arguments => ImmutableArray.Create(new[] {
+                (ICommandArgumentInfo)new WeebArgMention()
+            });
+            public int Priority => 0;
+        }
+
+        internal struct WeebArgMention : ICommandArgumentInfo {
+            public string Name => "user";
+            public string Description => "@user";
+            public bool IsOptional => false;
+            public bool IsCustomRequired() => false;
+            public bool IsHidden() => false;
+        }
+
+        internal static readonly WeebCmdInfo[] FakeCommandInfo = new WeebCmdInfo[] {
+            new WeebCmdInfo("awoo", "AWOOOOOOOOO",
                 msg: "AWOOOOO"),
-            new CmdInfo("bite", "Bites the living HECK out of someone.",
+            new WeebCmdInfo("bite", "Bites the living HECK out of someone.",
                 msg: "{0} was bit by {1}!", mentionsUser: true),
-            new CmdInfo("cry", ":(((((((",
+            new WeebCmdInfo("cry", ":(((((((",
                 msg: ":CCCCCCC"),
-            new CmdInfo("cuddle", "Cuddles a person.",
+            new WeebCmdInfo("cuddle", "Cuddles a person.",
                 msg: "{0} was cuddled by {1}.", mentionsUser: true),
-        }.ToDictionary(keySelector: cmdInfo => cmdInfo.Type);
-        internal static readonly string[] FakeCommands = FakeCommandInfo.Keys.ToArray();
+        };
+
+        ICommandInfo[] IHasFakeCommands.FakeCommandInfo => FakeCommandInfo.Cast<ICommandInfo>().ToArray();
+
+        private static readonly string[] FakeCommands = FakeCommandInfo.Select(cmdInfo => cmdInfo.Name).ToArray();
+        string[] IHasFakeCommands.FakeCommands => FakeCommands;
 
         // This gets initialized before the bot starts responding to commands
         private static WeebClient WeebClient = null!;
@@ -64,13 +104,26 @@ namespace KekBot.Command.Commands {
             await WeebClient.Authenticate(token, TokenType.Wolke);
         }
 
-        internal static async Task HandleFakeCommand(CommandContext ctx, string type) {
-            await Base(ctx, type: type, msg: FakeCommandInfo[type].Msg);
+        async Task IHasFakeCommands.HandleFakeCommand(CommandContext ctx, string cmdName) {
+            Util.Assert(FakeCommands.Contains(cmdName), elsePanicWith: "how did this happen");
+            Util.Assert(FakeCommandInfo.Any(cmd => cmd.Name == cmdName), elsePanicWith: "how did this happen");
+
+            var cmdInfo = FakeCommandInfo.First(cmdInfo => cmdInfo.Name == cmdName);
+            if (cmdInfo.MentionsUser) {
+                var rawArgs = ctx.RawArguments;
+                var user = rawArgs.Count >= 1
+                    ? await rawArgs[0].ConvertArgAsync<DiscordMember>(ctx)
+                    : null;
+                await BaseMention(ctx, user, type: cmdName, msg: cmdInfo.Msg);
+            } else {
+                await Base(ctx, type: cmdName, msg: cmdInfo.Msg);
+            }
         }
 
-        internal static async Task HandleFakeCommand(CommandContext ctx, string type, DiscordMember? user) {
-            await BaseMention(ctx, user, type: type, msg: FakeCommandInfo[type].Msg);
-        }
+        // TODO: remove
+        //internal static async Task HandleFakeCommand(CommandContext ctx, string type, DiscordMember? user) {
+        //    await BaseMention(ctx, user, type: type, msg: FakeCommandInfo[type].Msg);
+        //}
 
         private static NsfwSearch CheckNsfw(CommandContext ctx, FlagArgs flags) =>
             !ctx.Channel.IsNSFW

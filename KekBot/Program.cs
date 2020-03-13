@@ -7,11 +7,11 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RethinkDb.Driver;
 using RethinkDb.Driver.Net;
-using Weeb.net;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Exceptions;
@@ -21,15 +21,19 @@ using KekBot.ArgumentResolvers;
 using KekBot.Command.Commands;
 using KekBot.Utils;
 using System.Linq;
+using KekBot.Lib;
 
 namespace KekBot {
     class Program {
+
         // TODO: do something better with version
         private const string Name = "KekBot";
         private const string Version = "2.0";
 
         static DiscordClient? Discord;
-        static CommandsNextExtension? Commands;
+        static CommandsNextExtension? CNext;
+        static FakeCommandsDictionary FakeCommands = new FakeCommandsDictionary();
+        static CommandInfoList CommandInfo = new CommandInfoList();
         static readonly ConcurrentDictionary<ulong, string> PrefixSettings = new ConcurrentDictionary<ulong, string>();
         static InteractivityExtension? Interactivity;
         public static RethinkDB R = RethinkDB.R;
@@ -64,47 +68,61 @@ namespace KekBot {
 
             Discord = new DiscordClient(new DiscordConfiguration {
                 Token = config.Token,
-                TokenType = DSharpPlus.TokenType.Bot,
+                TokenType = TokenType.Bot,
                 LogLevel = LogLevel.Debug,
                 UseInternalLogHandler = true
             });
 
             Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
-            Commands = Discord.UseCommandsNext(new CommandsNextConfiguration {
+            var deps = new ServiceCollection()
+                .AddSingleton(FakeCommands)
+                .AddSingleton(CommandInfo)
+                .BuildServiceProvider();
+
+            CNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
                 EnableMentionPrefix = true,
                 PrefixResolver = ResolvePrefixAsync,
                 IgnoreExtraArguments = true,
-                EnableDefaultHelp = false
+                EnableDefaultHelp = false,
+                Services = deps
             });
 
             //Commands.Client.MessageCreated += HandleCommandsAsync;
 
-            Commands.CommandErrored += HandleError;
+            CNext.CommandErrored += HandleError;
 
-            Commands.RegisterConverter(new ChoicesConverter());
-            Commands.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
-            Commands.RegisterConverter(new FlagsConverter());
-            //Commands.RegisterUserFriendlyTypeName<Arguments.Flags>("");
+            CNext.RegisterConverter(new ChoicesConverter());
+            CNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
+            CNext.RegisterConverter(new FlagsConverter());
 
-            Commands.RegisterCommands<TestCommand>();
-            Commands.RegisterCommands<PickCommand>();
-            Commands.RegisterCommands<PingCommand>();
-            Commands.RegisterCommands<OwnerCommands>();
-            Commands.RegisterCommands<TestCommandTwo>();
-            Commands.RegisterCommands<HelpCommand>();
-            Commands.RegisterCommands<FunCommands>();
+            CNext.RegisterCommands<TestCommand>();
+            CNext.RegisterCommands<PickCommand>();
+            CNext.RegisterCommands<PingCommand>();
+            CNext.RegisterCommands<OwnerCommands>();
+            CNext.RegisterCommands<TestCommandTwo>();
+            CNext.RegisterCommands<HelpCommand>();
+            CNext.RegisterCommands<FunCommands>();
 
             if (config.WeebToken == null) {
                 Console.WriteLine("NOT registering weeb commands because no token was found >:(");
             } else {
                 Console.WriteLine("Initializing weeb commands");
-                Commands.RegisterCommands<WeebCommands>();
+                RegisterFakeCommands(new WeebCommands());
                 await WeebCommands.InitializeAsync(name: Name, version: Version, token: config.WeebToken);
             }
 
+            CommandInfo.AddRange(CNext.RegisteredCommands.Values.Select(cmd => (ICommandInfo)new CommandInfo(cmd)));
+
             await Discord.ConnectAsync();
             await Task.Delay(-1);
+        }
+
+        private static void RegisterFakeCommands(IHasFakeCommands faker) {
+            CommandInfo.AddRange(faker.FakeCommandInfo);
+            foreach (var name in faker.FakeCommands) {
+                FakeCommands.Add(name, faker);
+            }
         }
 
         private class MyCmdsConfig {
@@ -126,18 +144,9 @@ namespace KekBot {
             Console.Error.WriteLine(error);
         }
 
-        private async static Task HandleUnknownCommand(CommandContext ctx, string cmdName) {
-            if (WeebCommands.FakeCommands.Contains(cmdName)) {
-                if (WeebCommands.FakeCommandInfo[cmdName].MentionsUser) {
-                    var rawArgs = ctx.RawArguments;
-                    var user = rawArgs.Count >= 1
-                        ? await rawArgs[0].ConvertArgAsync<DiscordMember>(ctx)
-                        : null;
-                    await WeebCommands.HandleFakeCommand(ctx, cmdName, user);
-                } else {
-                    await WeebCommands.HandleFakeCommand(ctx, cmdName);
-                }
-                return;
+        private static async Task HandleUnknownCommand(CommandContext ctx, string cmdName) {
+            if (FakeCommands.TryGetValue(cmdName, out var faker)) {
+                await faker.HandleFakeCommand(ctx, cmdName);
             }
         }
 
