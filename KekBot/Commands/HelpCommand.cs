@@ -5,8 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
-// Conflicts with KekBot.Command otherwise
-using Cmd = DSharpPlus.CommandsNext.Command;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
@@ -14,7 +12,7 @@ using KekBot.Attributes;
 using KekBot.Menu;
 using KekBot.Utils;
 
-namespace KekBot.Command.Commands {
+namespace KekBot.Commands {
     class HelpCommand : BaseCommandModule {
 
         private const string tagline = "KekBot, your friendly meme based bot!";
@@ -27,7 +25,7 @@ namespace KekBot.Command.Commands {
             if (query.Length == 0) {
                 //If no arguments were given, bring the commands list.
                 await DisplayCategoryHelp(ctx);
-            } else if (ctx.CommandsNext.FindCommand(query, out var _) is Cmd cmd) {
+            } else if (ctx.CommandsNext.FindCommand(query, out var _) is Command cmd) {
                 //Print the command help, if the command has been found.
                 await DisplayCommandHelp(ctx, cmd);
             } else if (Enum.TryParse(query, true, out Category cat)) {
@@ -39,7 +37,7 @@ namespace KekBot.Command.Commands {
             }
         }
 
-        private static async Task DisplayCommandHelp(CommandContext ctx, Cmd cmd) {
+        private static async Task DisplayCommandHelp(CommandContext ctx, Command cmd) {
             //Setup the embed.
             var aliases = string.Join(", ", cmd.Aliases.Select(alias => $"`{alias}`"));
             var embed = new DiscordEmbedBuilder()
@@ -70,7 +68,7 @@ namespace KekBot.Command.Commands {
             }
 
             //I heard you like methods, so I put a method in your method.
-            void AppendOverload(CommandOverload ovrld, Cmd? subcmd = null) {
+            void AppendOverload(CommandOverload ovrld, Command? subcmd = null) {
                 var ovrldHasArgs = ovrld.Arguments.Count > 0;
 
                 usage.Append("`");

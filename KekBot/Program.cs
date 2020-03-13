@@ -11,7 +11,7 @@ using DSharpPlus.CommandsNext.Exceptions;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using KekBot.ArgumentResolvers;
-using KekBot.Command.Commands;
+using KekBot.Commands;
 using KekBot.Utils;
 
 namespace KekBot {
