@@ -132,7 +132,7 @@ namespace KekBot {
                 return;
             }
 
-            await args.Context.Channel.SendMessageAsync($"An error occured: {error.Message}");
+            await args.Context.Channel.SendMessageAsync($"An error occurred: {error.Message}");
             Console.Error.WriteLine(error);
         }
 
