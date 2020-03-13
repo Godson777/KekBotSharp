@@ -72,8 +72,7 @@ namespace KekBot.Command.Commands {
             public string Name => "user";
             public string Description => "@user";
             public bool IsOptional => false;
-            public bool IsCustomRequired() => false;
-            public bool IsHidden() => false;
+            public bool IsHidden => false;
         }
 
         internal static readonly WeebCmdInfo[] FakeCommandInfo = new WeebCmdInfo[] {

@@ -42,18 +42,13 @@ namespace KekBot.Utils {
         public string Name { get; }
         public string Description { get; }
         public bool IsOptional { get; }
-        public bool IsCustomRequired() => _IsCustomRequired;
-        private readonly bool _IsCustomRequired;
-        public bool IsHidden() => _IsHidden;
-        private readonly bool _IsHidden;
-
+        public bool IsHidden { get; }
 
         public CommandArgumentInfo(CommandArgument arg) {
             Name = arg.Name;
             Description = arg.Description;
-            IsOptional = arg.IsOptional;
-            _IsCustomRequired = arg.IsCustomRequired();
-            _IsHidden = arg.IsHidden();
+            IsOptional = arg.IsOptional && !arg.IsCustomRequired();
+            IsHidden = arg.IsHidden();
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Immutable;
-using DSharpPlus.CommandsNext;
 using KekBot.Attributes;
 
 namespace KekBot.Utils {
@@ -22,7 +21,6 @@ namespace KekBot.Utils {
         public string Name { get; }
         public string Description { get; }
         public bool IsOptional { get; }
-        public bool IsCustomRequired();
-        public bool IsHidden();
+        public bool IsHidden { get; }
     }
 }

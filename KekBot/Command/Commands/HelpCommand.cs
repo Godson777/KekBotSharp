@@ -83,7 +83,7 @@ namespace KekBot.Command.Commands {
 
             //I heard you like methods, so I put a method in your method.
             void AppendOverload(ICommandOverloadInfo ovrld, Cmd? subcmd = null) {
-                var args = ovrld.Arguments.Where(arg => !arg.IsHidden());
+                var args = ovrld.Arguments.Where(arg => !arg.IsHidden);
                 var ovrldHasArgs = args.Any();
 
                 usage.Append("`");
@@ -93,7 +93,7 @@ namespace KekBot.Command.Commands {
                 if (ovrldHasArgs) {
                     usage.Append(" ");
                     //We have arguments, let's print them.
-                    usage.AppendJoin(" ", args.Select(arg => (arg.IsOptional && !arg.IsCustomRequired()) ? $"({arg.Name})" : $"[{arg.Name}]"));
+                    usage.AppendJoin(" ", args.Select(arg => arg.IsOptional ? $"({arg.Name})" : $"[{arg.Name}]"));
                 }
                 usage.Append("`");
 
