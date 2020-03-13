@@ -5,8 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
-// Conflicts with KekBot.Command otherwise
-using Cmd = DSharpPlus.CommandsNext.Command;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
@@ -15,7 +13,7 @@ using KekBot.Lib;
 using KekBot.Menu;
 using KekBot.Utils;
 
-namespace KekBot.Command.Commands {
+namespace KekBot.Commands {
     class HelpCommand : BaseCommandModule {
 
         private const string tagline = "KekBot, your friendly meme based bot!";
@@ -36,7 +34,7 @@ namespace KekBot.Command.Commands {
             if (query.Length == 0) {
                 //If no arguments were given, bring the commands list.
                 await DisplayCategoryHelp(ctx);
-            } else if (ctx.CommandsNext.FindCommand(query, out var _) is Cmd cmd) {
+            } else if (ctx.CommandsNext.FindCommand(query, out var _) is Command cmd) {
                 //Print the command help, if the command has been found.
                 await DisplayCommandHelp(ctx, CommandInfo.GetFor(cmd));
             } else if (FakeCommands.Contains(query)) {
@@ -82,7 +80,7 @@ namespace KekBot.Command.Commands {
             }
 
             //I heard you like methods, so I put a method in your method.
-            void AppendOverload(ICommandOverloadInfo ovrld, Cmd? subcmd = null) {
+            void AppendOverload(ICommandOverloadInfo ovrld, Command? subcmd = null) {
                 var args = ovrld.Arguments.Where(arg => !arg.IsHidden);
                 var ovrldHasArgs = args.Any();
 

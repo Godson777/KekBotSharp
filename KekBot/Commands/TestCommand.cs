@@ -11,7 +11,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KekBot {
+namespace KekBot.Commands {
     public class TestCommand : BaseCommandModule {
         [Command("test"), Description("example test command")]
         public async Task Test(CommandContext ctx) {
@@ -27,9 +27,9 @@ namespace KekBot {
             pag.timeout = TimeSpan.FromSeconds(30);
 
             await pag.Display(ctx.Channel);*/
-            
-            
-            
+
+
+
             /*var pag = new EmbedPaginator(ctx.Client.GetInteractivity());
             for (int i = 0; i < 5; i++) {
                 var builder = new DiscordEmbedBuilder();

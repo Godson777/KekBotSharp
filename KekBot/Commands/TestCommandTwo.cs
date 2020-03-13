@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KekBot.Command.Commands {
+namespace KekBot.Commands {
     [Group("testtwo"), Description("a collection of test commands")]
     class TestCommandTwo : BaseCommandModule {
         [Command("one"), Description("example test command"), Category(Category.Meme)]
@@ -26,7 +26,7 @@ namespace KekBot.Command.Commands {
         }
 
         [Command("two"), Description("hell if i know")]
-        public async Task Two(CommandContext ctx, [Description("just a random string to use")] String penis) {
+        public async Task Two(CommandContext ctx, [Description("just a random string to use")] string penis) {
             await ctx.RespondAsync($"You typed: {penis}");
         }
     }

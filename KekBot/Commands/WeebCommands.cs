@@ -14,7 +14,7 @@ using KekBot.Attributes;
 using KekBot.Lib;
 using KekBot.Utils;
 
-namespace KekBot.Command.Commands {
+namespace KekBot.Commands {
     class WeebCommands : IHasFakeCommands {
         internal struct WeebCmdInfo : ICommandInfo {
             public string Name { get; }
