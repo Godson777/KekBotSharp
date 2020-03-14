@@ -7,6 +7,55 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\discordGeneric.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<Resource Include="Resource\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Config\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resource\Files\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\games\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\justright\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\kirb\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\lean\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\lootbox\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\memegen\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\profile\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\profile\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\shop\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\sound\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+	<Resource Include="Resource\Files\youtried\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 
