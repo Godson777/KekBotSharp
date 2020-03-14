@@ -8,7 +8,9 @@ using KekBot.Utils;
 namespace KekBot.Arguments {
     internal struct FlagArgs {
 
-        private static readonly Regex FlagRegex = new Regex("\\b-{1,2}(?<name>[a-z])[:=](?<value>\\S*)\\b");
+        private static readonly Regex FlagRegex = new Regex(
+            "(?<!\\S)-{1,2}(?<name>[a-zA-Z]+)(?:[:=](?<value>\\S+))(?!\\S)"
+        );
         private static readonly string[] TruthyValues = new[] { "1", "ON", "YES", "TRUE", "ENABLE", "ENABLED" };
         private static readonly string[] FalsyValues = new[] { "0", "OFF", "NO", "FALSE", "DISABLE", "DISABLED" };
 
@@ -24,7 +26,7 @@ namespace KekBot.Arguments {
 
         public static FlagArgs? ParseString(string s, out string sWithoutFlags) {
             var matches = FlagRegex.Matches(s);
-            sWithoutFlags = RemoveFlagsFrom(s, matches);
+            sWithoutFlags = RemoveFlagsFrom(s, matches).Trim();
             var flags = matches.ToDictionary(
                 match => match.Groups["name"].Value.ToUpperInvariant(),
                 match => match.Groups["value"].Value.NonEmpty() ?? match.Groups["name"].Value
@@ -75,7 +77,7 @@ namespace KekBot.Arguments {
         /// Tries to parse the flag value as an enum. If it fails, returns null.
         /// </summary>
         public T? ParseEnum<T>(string flagName) where T : struct =>
-            Enum.TryParse(Get(flagName), out T result) ? result as T? : null;
+            Enum.TryParse(Get(flagName), ignoreCase: true, out T result) ? result as T? : null;
 
     }
 }

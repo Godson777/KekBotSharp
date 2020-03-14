@@ -49,8 +49,11 @@ namespace KekBot.Utils {
                 // God, this method sucks. And there's no alternative, as far as I can tell;
                 // the property that contains the registered converters is private.
                 return (Arg)await ctx.CommandsNext.ConvertArgument<Arg>(value, ctx);
-            } catch (ArgumentException e) when (e.Message == "Could not convert specified value to given type.") {
-                return default;
+            } catch (ArgumentException e) {
+                if (e.Message != "Could not convert specified value to given type. (Parameter 'value')") {
+                    Console.WriteLine($"Caught error from ConvertArgument: {e}");
+                }
+                return null;
             }
         }
         /// <summary>
@@ -110,6 +113,17 @@ namespace KekBot.Utils {
             DiscordUser u => u.Username,
         };
 
+        internal static string GetRawArgString(this CommandContext ctx, string cmdName) =>
+            ctx.Message.GetRawArgString(ctx.Prefix, cmdName);
+
+        internal static string GetRawArgString(this DiscordMessage msg, string prefix, string cmdName) {
+            var content = msg.Content;
+            var afterPrefix = content.FastIndexOfEnd(prefix).FoundIndexOr(0);
+            var afterCmd = content.FastIndexOfEnd(cmdName, afterPrefix).FoundIndexOr(0);
+            return content.Substring(afterCmd).Trim();
+        }
+
+        // TODO: I forgot about this; remove it I guess.
         /// <summary>
         /// Get a command module of the given type from CNext.RegisteredCommands. Panics if it can't be found.
         /// </summary>

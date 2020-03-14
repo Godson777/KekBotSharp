@@ -13,7 +13,6 @@ using KekBot.Arguments;
 using KekBot.Attributes;
 using KekBot.Lib;
 using KekBot.Utils;
-using System.Collections.Generic;
 
 namespace KekBot.Commands {
     class WeebCommands : IHasFakeCommands {
@@ -23,7 +22,7 @@ namespace KekBot.Commands {
             public string Description { get; }
             public Category Category => Category.Weeb;
             public ImmutableArray<ICommandOverloadInfo> Overloads { get; }
-            public DSharpPlus.CommandsNext.Command? Cmd => null;
+            public Command? Cmd => null;
 
             public string Msg { get; }
             public bool MentionsUser { get; }
@@ -58,15 +57,25 @@ namespace KekBot.Commands {
         }
 
         internal struct WeebOverload : ICommandOverloadInfo {
-            public ImmutableArray<ICommandArgumentInfo> Arguments => ImmutableArray<ICommandArgumentInfo>.Empty;
+            public ImmutableArray<ICommandArgumentInfo> Arguments => ImmutableArray.Create(new[] {
+                (ICommandArgumentInfo)new WeebArgFlags()
+            });
             public int Priority => 0;
         }
 
         internal struct WeebOverloadMention : ICommandOverloadInfo {
             public ImmutableArray<ICommandArgumentInfo> Arguments => ImmutableArray.Create(new[] {
+                // Flags are parsed before this arg
                 (ICommandArgumentInfo)new WeebArgMention()
             });
             public int Priority => 0;
+        }
+
+        internal struct WeebArgFlags : ICommandArgumentInfo {
+            public string Name => "flags";
+            public string Description => "";
+            public bool IsOptional => true;
+            public bool IsHidden => true;
         }
 
         internal struct WeebArgMention : ICommandArgumentInfo {
@@ -108,17 +117,16 @@ namespace KekBot.Commands {
             Util.Assert(FakeCommandInfo.Any(cmdInfo => cmdInfo.Name == cmdName), elsePanicWith: "how did this happen");
 
             var cmdInfo = FakeCommandInfo.First(cmdInfo => cmdInfo.Name == cmdName);
+            var argStr = ctx.GetRawArgString(cmdName);
             if (cmdInfo.MentionsUser) {
-                var content = ctx.Message.Content;
-                var afterPrefix = content.FastIndexOfEnd(ctx.Prefix).FoundIndexOr(0);
-                var afterCmd = content.FastIndexOfEnd(cmdName, afterPrefix).FoundIndexOr(0);
-                var argStr = content.Substring(afterCmd).Trim();
-                var user = argStr.Length == 0
+                var flags = FlagArgs.ParseString(argStr, out var nonFlagsStr) ?? new FlagArgs();
+                var user = nonFlagsStr.Length == 0
                     ? null
-                    : await Util.ConvertArgAsync<DiscordMember>(argStr, ctx);
-                await BaseMention(ctx, user, type: cmdName, msg: cmdInfo.Msg);
+                    : await Util.ConvertArgAsync<DiscordMember>(nonFlagsStr, ctx);
+                await BaseMention(ctx, user, type: cmdName, msg: cmdInfo.Msg, flags);
             } else {
-                await Base(ctx, type: cmdName, msg: cmdInfo.Msg);
+                var flags = FlagArgs.ParseString(argStr) ?? new FlagArgs();
+                await Base(ctx, type: cmdName, msg: cmdInfo.Msg, flags);
             }
         }
 
@@ -131,7 +139,7 @@ namespace KekBot.Commands {
             CommandContext ctx,
             string type,
             string msg,
-            FlagArgs flags = new FlagArgs()
+            FlagArgs flags
         ) {
             await ctx.TriggerTypingAsync();
 
@@ -169,7 +177,7 @@ namespace KekBot.Commands {
             DiscordMember? user,
             string type,
             string msg,
-            FlagArgs flags = new FlagArgs()
+            FlagArgs flags
         ) {
             if (user == null) {
                 await ctx.RespondAsync("You didn't @mention any users!");
