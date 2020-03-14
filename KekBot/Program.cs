@@ -15,6 +15,8 @@ using KekBot.ArgumentResolvers;
 using KekBot.Commands;
 using KekBot.Utils;
 using KekBot.Lib;
+using DSharpPlus.CommandsNext.Builders;
+using DSharpPlus.EventArgs;
 
 namespace KekBot {
     class Program {
@@ -34,8 +36,6 @@ namespace KekBot {
 
 
         static void Main(string[] args) {
-            PrefixSettings.AddOrUpdate(283100276125073409ul, "c#", (k, vold) => "p$");
-            PrefixSettings.AddOrUpdate(421681525227257878ul, "d$", (k, vold) => "p$");
             MainAsync(args).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
@@ -58,6 +58,7 @@ namespace KekBot {
                 Console.WriteLine("Database wasn't found, so it was created.");
             }
             Conn.Use(config.Db);
+            VerifyTables();
 
             Discord = new DiscordClient(new DiscordConfiguration {
                 Token = config.Token,
@@ -81,9 +82,8 @@ namespace KekBot {
                 Services = deps
             });
 
-            //Commands.Client.MessageCreated += HandleCommandsAsync;
-
             CNext.CommandErrored += HandleError;
+            Discord.GuildAvailable += GuildAvailable;
 
             CNext.RegisterConverter(new ChoicesConverter());
             CNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
@@ -118,14 +118,23 @@ namespace KekBot {
             }
         }
 
-        private async static Task HandleError(CommandErrorEventArgs args) {
-            var error = args.Exception;
-            if (error is CommandNotFoundException e) {
-                await HandleUnknownCommand(args.Context, e.CommandName);
-                return;
+        private async static Task HandleError(CommandErrorEventArgs errorArgs) {
+            var error = errorArgs.Exception;
+            switch (error) {
+                case CommandNotFoundException e:
+                    await HandleUnknownCommand(errorArgs.Context, e.CommandName);
+                    return;
+
+                case ArgumentException e: {
+                        var cmd = CNext!.FindCommand($"help {errorArgs.Command.QualifiedName}", out var args);
+                        var ctx = errorArgs.Context;
+                        var fakectx = CNext.CreateFakeContext(ctx.Member, ctx.Channel, ctx.Message.Content, ctx.Prefix, cmd, args);
+                        await CNext.ExecuteCommandAsync(fakectx);
+                        return;
+                    }
             }
 
-            await args.Context.Channel.SendMessageAsync($"An error occurred: {error.Message}");
+            await errorArgs.Context.Channel.SendMessageAsync($"An error occurred: {error.Message}");
             Console.Error.WriteLine(error);
         }
 
@@ -133,6 +142,11 @@ namespace KekBot {
             if (FakeCommands.TryGetValue(cmdName, out var faker)) {
                 await faker.HandleFakeCommand(ctx, cmdName);
             }
+        }
+
+        private async static Task GuildAvailable(GuildCreateEventArgs e) {
+            var set = await LegacySettings.Get(e.Guild);
+            if (set.Prefix != null) PrefixSettings.AddOrUpdate(e.Guild.Id, set.Prefix, (k, old) => set.Prefix);
         }
 
         private static Task<int> ResolvePrefixAsync(DiscordMessage msg) {
@@ -146,48 +160,11 @@ namespace KekBot {
             return Task.FromResult(pLen);
         }
 
-        //private static async Task HandleCommandsAsync(DSharpPlus.EventArgs.MessageCreateEventArgs e) {
-        //    if (e.Author.IsBot) // bad bot
-        //        return;
-
-        //    if (e.Channel.IsPrivate) // DMs
-        //        return;
-
-        //    var mpos = -1;
-        //    if (this.Config.EnableMentionPrefix)
-        //        mpos = e.Message.GetMentionPrefixLength(this.Client.CurrentUser);
-
-        //    if (this.Config.StringPrefixes?.Any() == true)
-        //        foreach (var pfix in this.Config.StringPrefixes)
-        //            if (mpos == -1 && !string.IsNullOrWhiteSpace(pfix))
-        //                mpos = e.Message.GetStringPrefixLength(pfix, this.Config.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
-
-        //    if (mpos == -1 && this.Config.PrefixResolver != null)
-        //        mpos = await this.Config.PrefixResolver(e.Message).ConfigureAwait(false);
-
-        //    if (mpos == -1)
-        //        return;
-
-        //    var pfx = e.Message.Content.Substring(0, mpos);
-        //    var cnt = e.Message.Content.Substring(mpos);
-
-        //    var __ = 0;
-        //    var fname = cnt.ExtractNextArgument(ref __);
-
-        //    var cmd = Commands!.FindCommand(cnt, out var args);
-        //    var ctx = this.CreateContext(e.Message, pfx, cmd, args);
-        //    if (cmd == null) {
-        //        await this._error.InvokeAsync(new CommandErrorEventArgs { Context = ctx, Exception = new CommandNotFoundException(fname) }).ConfigureAwait(false);
-        //        return;
-        //    }
-
-        //    _ = Task.Run(async () => await this.ExecuteCommandAsync(ctx));
-        //}
-
         /**
      * Verifies if the all the tables exist in our database.
      */
-        private static void verifyTables() {
+        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Yeah yeah, I'll make a proper logger later.")]
+        private static void VerifyTables() {
             if (!(bool)R.TableList().Contains("Profiles").Run(Conn)) {
                 Console.WriteLine("\"Profiles\" table was not found, so it is being made.");
                 R.TableCreate("Profiles").OptArg("primary_key", "User ID").Run(Conn);

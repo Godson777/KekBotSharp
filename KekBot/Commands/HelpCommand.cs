@@ -58,25 +58,26 @@ namespace KekBot.Commands {
                 .WithAuthor(name: tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
             //Prepare ourselves for usage
             var usage = new StringBuilder();
+            //Try the cast once.
+            var group = cmd.Cmd as CommandGroup;
             //The total count of subcommands and overloads.
-            var count = cmd.Overloads.Length;
-
-            //Do we have any subcommands?
-            if (cmd.Cmd is CommandGroup group) {
-                count += group.Children.Count;
-                //The following loop handles subcommands and their appropriate usage.
-                foreach (var subcmd in group.Children) {
-                    if (subcmd.Overloads.Count > 1 || subcmd is CommandGroup)
-                        usage.Append($"`{cmd.Name} {subcmd.Name}`: Visit `help {cmd.Name} {subcmd.Name}` for more information.");
-                    else
-                        AppendOverload(new CommandOverloadInfo(subcmd.Overloads.Single()), subcmd);
-                }
-            }
+            var count = cmd.Overloads.Length + (group?.Children.Count ?? 0);
 
             //The following loop handles overloads.
             foreach (var ovrld in cmd.Overloads) {
                 if (ovrld.Priority >= 0)
                     AppendOverload(ovrld);
+            }
+
+            //Do we have any subcommands?
+            if (group != null) {
+                //The following loop handles subcommands and their appropriate usage.
+                foreach (var subcmd in group.Children) {
+                    if (subcmd.Overloads.Count > 1 || subcmd is CommandGroup)
+                        usage.AppendLine($"`{cmd.Name} {subcmd.Name}`: Visit `help {cmd.Name} {subcmd.Name}` for more information.");
+                    else
+                        AppendOverload(new CommandOverloadInfo(subcmd.Overloads.Single()), subcmd);
+                }
             }
 
             //I heard you like methods, so I put a method in your method.

@@ -37,7 +37,7 @@ namespace KekBot.Commands {
             string coin = Random.Next(2) == 0 ? "HEADS" : "TAILS";
             await ctx.RespondAsync($"{ctx.User.Username} flipped the coin and it landed on... ***{coin}!***");
         }
-        
+
 
     }
 }

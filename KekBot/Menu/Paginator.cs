@@ -13,10 +13,10 @@ namespace KekBot.Menu {
         public int Columns { private get; set; } = 1;
         public int ItemsPerPage { private get; set; } = 10;
         public bool ShowPageNumbers { private get; set; } = true;
-        public bool NumberItems { private get; set; } = true;
-        public List<string> Strings { get; private set; } = new List<string>();
+        public bool NumberedItems { private get; set; } = true;
+        public List<string> Strings { get; set; } = new List<string>();
         private int Pages => (int)Math.Ceiling((double)Strings.Count / ItemsPerPage);
-        public Action<DiscordMessage>? FinalAction { private get; set; }
+        public Action<DiscordMessage>? FinalAction { private get; set; } = async m => await m.DeleteAllReactionsAsync();
         public int BulkSkipNumber { private get; set; } = 0;
         public bool WrapPageEnds { private get; set; } = true;
 
@@ -46,7 +46,7 @@ namespace KekBot.Menu {
             else if (pageNum > Pages)
                 pageNum = Pages;
             var msg = RenderPage(pageNum);
-            await Initialize(await channel.SendMessageAsync(embed: msg), pageNum);
+            await Initialize(await channel.SendMessageAsync(content: Text?.Invoke(pageNum, Pages), embed: msg), pageNum);
         }
 
         private async Task Paginate(DiscordMessage message, int pageNum) {
@@ -55,7 +55,7 @@ namespace KekBot.Menu {
             else if (pageNum > Pages)
                 pageNum = Pages;
             var msg = RenderPage(pageNum);
-            await Initialize(await message.ModifyAsync(embed: msg), pageNum);
+            await Initialize(await message.ModifyAsync(content: Text?.Invoke(pageNum, Pages), embed: msg), pageNum);
         }
 
         private async Task Initialize(DiscordMessage message, int pageNum) {
@@ -130,14 +130,14 @@ namespace KekBot.Menu {
             if (Columns == 1) {
                 var sbuilder = new StringBuilder();
                 for (int i = start; i < end; i++)
-                    sbuilder.Append("\n").Append(NumberItems ? $"`{i+1}.` " : "").Append(Strings[i]);
+                    sbuilder.Append("\n").Append(NumberedItems ? $"`{i + 1}.` " : "").Append(Strings[i]);
                 builder.Description = sbuilder.ToString();
             } else {
                 int per = (int)Math.Ceiling((double)(end - start) / Columns);
                 for (int k = 0; k < Columns; k++) {
                     var sbuilder = new StringBuilder();
                     for (int i = start + k * per; i < end && i < start + (k + 1) * per; i++)
-                        sbuilder.Append("\n").Append(NumberItems ? $"{i + 1}. " : "").Append(Strings[i]);
+                        sbuilder.Append("\n").Append(NumberedItems ? $"{i + 1}. " : "").Append(Strings[i]);
                     builder.AddField("", sbuilder.ToString(), true);
                 }
             }
@@ -146,6 +146,18 @@ namespace KekBot.Menu {
             if (ShowPageNumbers)
                 builder.WithFooter($"Page {pageNum}/{Pages}");
             return builder.Build();
+        }
+
+        public void SetGenericColor(DiscordColor color) {
+            this.Color = (i0, i1) => {
+                return color;
+            };
+        }
+
+        public void SetGenericText(string text) {
+            this.Text = (i0, i1) => {
+                return text;
+            };
         }
     }
 }
