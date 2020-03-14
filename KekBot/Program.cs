@@ -83,7 +83,7 @@ namespace KekBot {
             });
 
             CNext.CommandErrored += HandleError;
-            Discord.GuildAvailable += GuildAvailable;
+            //Discord.GuildAvailable += GuildAvailable;
 
             CNext.RegisterConverter(new ChoicesConverter());
             CNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
