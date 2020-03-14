@@ -7,52 +7,48 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Resources\discordGeneric.png" />
-  </ItemGroup>
-
-  <ItemGroup>
-	<Resource Include="Resource\*">
+	<None Update="Resource\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Config\*">
+    </None>
+	<None Update="Resource\Config\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="Resource\Files\*">
+    </None>
+    <None Update="Resource\Files\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\games\*">
+    </None>
+	<None Update="Resource\Files\games\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\justright\*">
+    </None>
+	<None Update="Resource\Files\justright\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\kirb\*">
+    </None>
+	<None Update="Resource\Files\kirb\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\lean\*">
+    </None>
+	<None Update="Resource\Files\lean\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\lootbox\*">
+    </None>
+	<None Update="Resource\Files\lootbox\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\memegen\*">
+    </None>
+	<None Update="Resource\Files\memegen\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\profile\*">
+    </None>
+	<None Update="Resource\Files\profile\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\profile\*">
+    </None>
+	<None Update="Resource\Files\profile\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\shop\*">
+    </None>
+	<None Update="Resource\Files\shop\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\sound\*">
+    </None>
+	<None Update="Resource\Files\sound\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-	<Resource Include="Resource\Files\youtried\*">
+    </None>
+	<None Update="Resource\Files\youtried\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

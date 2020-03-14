@@ -19,7 +19,7 @@ namespace KekBot {
 
         public static async Task<Config> Get() {
             if (_instance == null) {
-                using var fs = File.OpenRead("Resources/Config/config.json");
+                using var fs = File.OpenRead("Resource/Config/config.json");
                 using var sr = new StreamReader(fs, new UTF8Encoding(false));
                 return _instance = JsonConvert.DeserializeObject<Config>(await sr.ReadToEndAsync());
             } else return _instance;
