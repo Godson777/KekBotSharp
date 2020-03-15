@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace KekBot {
-    internal class Config {
+    public class Config {
         [JsonProperty("token")]
         public string Token { get; private set; }
         [JsonProperty("database")]
@@ -14,6 +14,8 @@ namespace KekBot {
         public string DbUser { get; private set; }
         [JsonProperty("dbPassword")]
         public string DbPass { get; private set; }
+        [JsonProperty("shards")]
+        public int Shards { get; private set; }
 
         private static Config _instance;
 
