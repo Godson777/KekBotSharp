@@ -16,6 +16,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -183,7 +184,7 @@ namespace KekBot {
                         Console.ForegroundColor = ConsoleColor.Magenta;
                         break;
                 }
-                Console.Write("[{0}]", e.Level.ToString().ToFixedWidth(4));
+                Console.Write("[{0}]", e.Level.ToString().ToFixedWidth(5));
 
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.BackgroundColor = ConsoleColor.Black;
@@ -223,7 +224,7 @@ namespace KekBot {
             e.Client.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "KekBot is ready to roll!", DateTime.Now);
 
             if (this.GameTimer == null) {
-
+                this.GameTimer = new Timer(this.GameTimerCallback, e.Client, TimeSpan.Zero, TimeSpan.FromMinutes(15));
             }
             return Task.CompletedTask;
         }
@@ -284,6 +285,22 @@ namespace KekBot {
         private static async Task HandleUnknownCommand(CommandContext ctx, string cmdName) {
             if (FakeCommands.TryGetValue(cmdName, out var faker)) {
                 await faker.HandleFakeCommand(ctx, cmdName);
+            }
+        }
+
+        private async void GameTimerCallback(object _) {
+            var client = _ as DiscordClient;
+            try {
+                var statuses = await File.ReadAllLinesAsync("Resource/Files/games.txt");
+                var status = statuses.RandomElement();
+                var type = (ActivityType)Enum.Parse(typeof(ActivityType), status.Substring(0, status.IndexOf(" ")));
+                status = status.Substring(status.IndexOf(" ") + 1);
+
+                await client.UpdateStatusAsync(new DiscordActivity(status, type), UserStatus.Online);
+                client.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, $"Presense updated to ({type}) {status}", DateTime.Now);
+                GC.Collect();
+            } catch (Exception e) {
+                client.DebugLogger.LogMessage(LogLevel.Error, LOGTAG, $"Could not update presense ({e.GetType()}: {e.Message})", DateTime.Now);
             }
         }
     }
