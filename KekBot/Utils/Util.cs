@@ -176,5 +176,24 @@ namespace KekBot.Utils {
             }
         }
 
+        /// <summary>
+        /// Converts the string to a fixed-width string.
+        /// </summary>
+        /// <param name="s">String to fix the width of.</param>
+        /// <param name="targetLength">Length that the string should be.</param>
+        /// <returns>Adjusted string.</returns>
+        public static string ToFixedWidth(this string s, int targetLength) {
+            if (s == null)
+                throw new NullReferenceException();
+
+            if (s.Length < targetLength)
+                return s.PadRight(targetLength, ' ');
+
+            if (s.Length > targetLength)
+                return s.Substring(0, targetLength);
+
+            return s;
+        }
+
     }
 }

@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace KekBot {
-    internal class Config {
+    public class Config {
         [JsonProperty("token")]
         public string Token { get; private set; }
         [JsonProperty("database")]
@@ -14,6 +14,8 @@ namespace KekBot {
         public string DbUser { get; private set; }
         [JsonProperty("dbPassword")]
         public string DbPass { get; private set; }
+        [JsonProperty("shards")]
+        public int Shards { get; private set; }
 
         [JsonProperty("weebToken")]
         public string WeebToken { get; private set; }
@@ -22,7 +24,7 @@ namespace KekBot {
 
         public static async Task<Config> Get() {
             if (_instance == null) {
-                using var fs = File.OpenRead("../../../../config/config.json");
+                using var fs = File.OpenRead("Resource/Config/config.json");
                 using var sr = new StreamReader(fs, new UTF8Encoding(false));
                 return _instance = JsonConvert.DeserializeObject<Config>(await sr.ReadToEndAsync());
             } else return _instance;
