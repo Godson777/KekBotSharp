@@ -10,10 +10,22 @@ using KekBot.Utils;
 namespace KekBot.Menu {
     public class EmbedPaginator : Menu {
 
+        /// <summary>
+        /// The color the Embeds will use.
+        /// </summary>
         public DiscordColor Color { get; set; } = DiscordColor.White;
+        /// <summary>
+        /// This final action is called when the user hits the stop button. (Or the paginator times out from no response.)
+        /// </summary>
         public Action<DiscordMessage>? FinalAction { get; set; } = async m => await m.DeleteAllReactionsAsync();
-        public bool ShowPageNumbers { get; set; }
+        /// <summary>
+        /// If true, the page count will be shown at the footer.
+        /// </summary>
+        public bool ShowPageNumbers { get; set; } = true;
         protected int Pages => Embeds.Count;
+        /// <summary>
+        /// The list of embeds to paginate.
+        /// </summary>
         public List<DiscordEmbed> Embeds { get; private set; } = new List<DiscordEmbed>();
 
         protected string Left { get; private set; } = "◀️";

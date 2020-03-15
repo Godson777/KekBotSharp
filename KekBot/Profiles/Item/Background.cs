@@ -9,6 +9,12 @@ namespace KekBot.Profiles.Item {
             return new FileStream($"Resource/Files/profile/background/{File}", FileMode.Open);
         }
 
-        
+        /// <summary>
+        /// Equips the background to be used in the user's profile.
+        /// </summary>
+        /// <returns></returns>
+        public override bool Equip() {
+            return true;
+        }
     }
 }
