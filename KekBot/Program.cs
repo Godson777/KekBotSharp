@@ -65,7 +65,7 @@ namespace KekBot {
             Console.WriteLine("Loading Completed! Booting shards!");
             Console.WriteLine("----------------------------------");
 
-            foreach (var (k, shard) in Shards) {
+            foreach (var (_, shard) in Shards) {
                 await shard.StartAsync();
             }
 

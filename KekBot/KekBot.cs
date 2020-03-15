@@ -14,6 +14,7 @@ using RethinkDb.Driver;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -111,12 +112,23 @@ namespace KekBot {
             this.Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
             this.Discord.GuildAvailable += GuildAvailable;
             this.Discord.Ready += Ready;
+            this.Discord.ClientErrored += DiscordErrored;
+            this.Discord.SocketErrored += SocketErrored;
 
             this.PrefixSettings = new ConcurrentDictionary<ulong, string>();
 
             this.Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
             this.Lavalink = Discord.UseLavalink();
+        }
+
+        private Task SocketErrored(SocketErrorEventArgs e) {
+            var ex = e.Exception;
+            while (ex is AggregateException)
+                ex = ex.InnerException;
+
+            e.Client.DebugLogger.LogMessage(LogLevel.Critical, LOGTAG, $"Socket threw an exception {ex}", DateTime.Now);
+            return Task.CompletedTask;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
@@ -182,7 +194,7 @@ namespace KekBot {
             if (set.Prefix != null) PrefixSettings.AddOrUpdate(e.Guild.Id, set.Prefix, (k, old) => set.Prefix);
         }
 
-        private Task Discord_ClientErrored(ClientErrorEventArgs e) {
+        private Task DiscordErrored(ClientErrorEventArgs e) {
             var ex = e.Exception;
             while (ex is AggregateException)
                 ex = ex.InnerException;
