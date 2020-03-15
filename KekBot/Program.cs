@@ -22,16 +22,6 @@ using System.Collections.Generic;
 namespace KekBot {
     class Program {
 
-        // TODO: remove commented out.
-
-        //private const string Name = "KekBot";
-        //private const string Version = "2.0";
-
-        //static DiscordClient? Discord;
-        //static CommandsNextExtension? CNext;
-        
-        //static readonly ConcurrentDictionary<ulong, string> PrefixSettings = new ConcurrentDictionary<ulong, string>();
-        //static InteractivityExtension? Interactivity;
         public static RethinkDB R = RethinkDB.R;
         public static Connection Conn;
         private static Dictionary<int, KekBot> Shards { get; set; }
@@ -68,50 +58,6 @@ namespace KekBot {
             Console.WriteLine("[RethinkDB] Connected to Database!");
             VerifyTables();
 
-            //Discord = new DiscordClient(new DiscordConfiguration {
-            //    Token = config.Token,
-            //    TokenType = TokenType.Bot,
-            //    LogLevel = LogLevel.Debug,
-            //    UseInternalLogHandler = true
-            //});
-
-            //var deps = new ServiceCollection()
-            //    .AddSingleton(FakeCommands)
-            //    .AddSingleton(CommandInfo)
-            //    .BuildServiceProvider();
-
-            //CNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
-            //    EnableMentionPrefix = true,
-            //    PrefixResolver = ResolvePrefixAsync,
-            //    IgnoreExtraArguments = true,
-            //    EnableDefaultHelp = false,
-            //    Services = deps
-            //});
-
-            //CNext.CommandErrored += HandleError;
-
-            //CNext.RegisterConverter(new ChoicesConverter());
-            //CNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
-            //CNext.RegisterConverter(new FlagsConverter());
-
-            //CNext.RegisterCommands<TestCommand>();
-            //CNext.RegisterCommands<PickCommand>();
-            //CNext.RegisterCommands<PingCommand>();
-            //CNext.RegisterCommands<OwnerCommands>();
-            //CNext.RegisterCommands<TestCommandTwo>();
-            //CNext.RegisterCommands<HelpCommand>();
-            //CNext.RegisterCommands<FunCommands>();
-
-            //if (config.WeebToken == null) {
-            //    Console.WriteLine("NOT registering weeb commands because no token was found >:(");
-            //} else {
-            //    Console.WriteLine("Initializing weeb commands");
-            //    RegisterFakeCommands(new WeebCommands());
-            //    await WeebCommands.InitializeAsync(name: Name, version: Version, token: config.WeebToken);
-            //}
-
-            //CommandInfo.AddRange(CNext.RegisteredCommands.Values.Select(cmd => (ICommandInfo)new CommandInfo(cmd)));
-
             Console.WriteLine("[3/3] Creating and booting shards...");
             Shards = new Dictionary<int, KekBot>();
             for (int i = 0; i < config.Shards; i++) {
@@ -130,39 +76,6 @@ namespace KekBot {
 
             await Task.Delay(-1);
         }
-
-        //private static void RegisterFakeCommands(IHasFakeCommands faker) {
-        //    CommandInfo.AddRange(faker.FakeCommandInfo);
-        //    foreach (var name in faker.FakeCommands) {
-        //        FakeCommands.Add(name, faker);
-        //    }
-        //}
-
-        //private async static Task HandleError(CommandErrorEventArgs errorArgs) {
-        //    var error = errorArgs.Exception;
-        //    switch (error) {
-        //        case CommandNotFoundException e:
-        //            await HandleUnknownCommand(errorArgs.Context, e.CommandName);
-        //            return;
-
-        //        case ArgumentException e: {
-        //                var cmd = CNext!.FindCommand($"help {errorArgs.Command.QualifiedName}", out var args);
-        //                var ctx = errorArgs.Context;
-        //                var fakectx = CNext.CreateFakeContext(ctx.Member, ctx.Channel, ctx.Message.Content, ctx.Prefix, cmd, args);
-        //                await CNext.ExecuteCommandAsync(fakectx);
-        //                return;
-        //            }
-        //    }
-
-        //    await errorArgs.Context.Channel.SendMessageAsync($"An error occurred: {error.Message}");
-        //    Console.Error.WriteLine(error);
-        //}
-
-        //private static async Task HandleUnknownCommand(CommandContext ctx, string cmdName) {
-        //    if (FakeCommands.TryGetValue(cmdName, out var faker)) {
-        //        await faker.HandleFakeCommand(ctx, cmdName);
-        //    }
-        //}
 
         /// <summary>
         /// Verifies if the all the tables exist in our database.

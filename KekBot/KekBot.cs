@@ -73,6 +73,12 @@ namespace KekBot {
         public int ShardID { get; }
 
 
+        /// <summary>
+        /// Await this task to wait for this to be ready to handle weeb.sh requests.
+        /// </summary>
+        private Task Initialized { get; set; } = Task.CompletedTask;
+        private void AddInitTask(Task task) => Initialized = Task.WhenAll(new[] { Initialized, task });
+
         private Timer GameTimer { get; set; } = null;
         private ConcurrentDictionary<ulong, string> PrefixSettings { get; }
         private IServiceProvider Services { get; }
@@ -98,7 +104,6 @@ namespace KekBot {
                 LogLevel = LogLevel.Debug
             });
 
-            //There aren't any services for now. But I recall hutch saying he was using a ServiceCollection for something, so it's just here.
             this.Services = new ServiceCollection()
                 .AddSingleton(FakeCommands)
                 .AddSingleton(CommandInfo)
@@ -129,6 +134,16 @@ namespace KekBot {
             this.CommandsNext.RegisterCommands<HelpCommand>();
             this.CommandsNext.RegisterCommands<FunCommands>();
             this.CommandsNext.RegisterCommands<QuoteCommand>();
+
+            if (config.WeebToken == null) {
+                Console.WriteLine("NOT registering weeb commands because no token was found >:(");
+            } else {
+                Console.WriteLine("Initializing weeb commands");
+                var weebCmds = new WeebCommands(botName: Name, botVersion: Version, weebToken: config.WeebToken);
+                RegisterFakeCommands(weebCmds);
+                // TODO: fix this's docs.
+                AddInitTask(weebCmds.Initialized);
+            }
 
             this.Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
             this.Discord.GuildAvailable += GuildAvailable;
@@ -195,27 +210,19 @@ namespace KekBot {
             }
         }
 
-        public async static Task InitializeStatic(KekBot bot, Config config) {
-            if (config.WeebToken == null) {
-                Console.WriteLine("NOT registering weeb commands because no token was found >:(");
-            } else {
-                Console.WriteLine("Initializing weeb commands");
-                RegisterFakeCommands(new WeebCommands());
-                await WeebCommands.InitializeAsync(name: Name, version: Version, token: config.WeebToken);
-            }
-
+        public async Task InitOnce(KekBot bot, Config config) {
             CommandInfo.AddRange(bot.CommandsNext.RegisteredCommands.Values.Select(cmd => (ICommandInfo)new CommandInfo(cmd)));
+        }
 
-            static void RegisterFakeCommands(IHasFakeCommands faker) {
-                CommandInfo.AddRange(faker.FakeCommandInfo);
-                foreach (var name in faker.FakeCommands) {
-                    FakeCommands.Add(name, faker);
-                }
+        private static void RegisterFakeCommands(IHasFakeCommands faker) {
+            CommandInfo.AddRange(faker.FakeCommandInfo);
+            foreach (var name in faker.FakeCommands) {
+                FakeCommands.Add(name, faker);
             }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "I will destroy you")]
-        public Task StartAsync() {
+        public async Task StartAsync() {
             this.Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Booting KekBot Shard.", DateTime.Now);
             return this.Discord.ConnectAsync();
         }
