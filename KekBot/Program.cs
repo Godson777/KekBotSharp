@@ -117,6 +117,7 @@ namespace KekBot {
             for (int i = 0; i < config.Shards; i++) {
                 Shards[i] = new KekBot(config, i);
             }
+            await KekBot.InitializeStatic(Shards.Values.First(), config);
 
             Console.WriteLine("Loading Completed! Booting shards!");
             Console.WriteLine("----------------------------------");

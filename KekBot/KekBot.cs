@@ -27,17 +27,15 @@ namespace KekBot {
     /// Represents a single shard of KekBot
     /// </summary>
     public sealed class KekBot {
-        static bool InitedStatic = false;
-
         /// <summary>
         /// Info on all commands, "real" and "fake".
         /// </summary>
-        static CommandInfoList CommandInfo = new CommandInfoList();
+        static readonly CommandInfoList CommandInfo = new CommandInfoList();
 
         /// <summary>
         /// Commands that don't exist in CommandsNext's usual system.
         /// </summary>
-        static FakeCommandsDictionary FakeCommands = new FakeCommandsDictionary();
+        static readonly FakeCommandsDictionary FakeCommands = new FakeCommandsDictionary();
 
         // TODO: something better.
         private const string Name = "KekBot";
@@ -131,19 +129,6 @@ namespace KekBot {
             this.CommandsNext.RegisterCommands<FunCommands>();
             this.CommandsNext.RegisterCommands<QuoteCommand>();
 
-            if (config.WeebToken == null) {
-                Console.WriteLine("NOT registering weeb commands because no token was found >:(");
-            } else {
-                Console.WriteLine("Initializing weeb commands");
-                RegisterFakeCommands(new WeebCommands());
-                // TODO: how to await? also need name & version.
-                if (!InitedStatic) WeebCommands.InitializeAsync(name: Name, version: Version, token: config.WeebToken);
-            }
-
-            if (!InitedStatic) CommandInfo.AddRange(this.CommandsNext.RegisteredCommands.Values.Select(cmd => (ICommandInfo)new CommandInfo(cmd)));
-
-            InitedStatic = true;
-
             this.Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
             this.Discord.GuildAvailable += GuildAvailable;
             this.Discord.Ready += Ready;
@@ -155,13 +140,6 @@ namespace KekBot {
             this.Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
             this.Lavalink = Discord.UseLavalink();
-        }
-
-        private static void RegisterFakeCommands(IHasFakeCommands faker) {
-            CommandInfo.AddRange(faker.FakeCommandInfo);
-            foreach (var name in faker.FakeCommands) {
-                FakeCommands.Add(name, faker);
-            }
         }
 
         private Task SocketErrored(SocketErrorEventArgs e) {
@@ -213,6 +191,25 @@ namespace KekBot {
 
                 Console.ForegroundColor = fg;
                 Console.BackgroundColor = bg;
+            }
+        }
+
+        public async static Task InitializeStatic(KekBot bot, Config config) {
+            if (config.WeebToken == null) {
+                Console.WriteLine("NOT registering weeb commands because no token was found >:(");
+            } else {
+                Console.WriteLine("Initializing weeb commands");
+                RegisterFakeCommands(new WeebCommands());
+                await WeebCommands.InitializeAsync(name: Name, version: Version, token: config.WeebToken);
+            }
+
+            CommandInfo.AddRange(bot.CommandsNext.RegisteredCommands.Values.Select(cmd => (ICommandInfo)new CommandInfo(cmd)));
+
+            static void RegisterFakeCommands(IHasFakeCommands faker) {
+                CommandInfo.AddRange(faker.FakeCommandInfo);
+                foreach (var name in faker.FakeCommands) {
+                    FakeCommands.Add(name, faker);
+                }
             }
         }
 
