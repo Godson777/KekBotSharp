@@ -1,4 +1,12 @@
-﻿using DSharpPlus;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.CommandsNext.Exceptions;
@@ -10,18 +18,6 @@ using KekBot.ArgumentResolvers;
 using KekBot.Commands;
 using KekBot.Lib;
 using KekBot.Utils;
-using Microsoft.Extensions.DependencyInjection;
-using RethinkDb.Driver;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Xml;
 
 namespace KekBot {
     /// <summary>
@@ -92,13 +88,13 @@ namespace KekBot {
 
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Running the bot requires knowledge of English")]
         public KekBot(Config config, int shardID) {
-            this.ShardID = shardID;
+            ShardID = shardID;
 
-            this.Discord = new DiscordClient(new DiscordConfiguration() {
+            Discord = new DiscordClient(new DiscordConfiguration() {
                 Token = config.Token,
                 TokenType = TokenType.Bot,
                 ShardCount = config.Shards,
-                ShardId = this.ShardID,
+                ShardId = ShardID,
 
                 AutoReconnect = true,
                 ReconnectIndefinitely = true,
@@ -114,7 +110,7 @@ namespace KekBot {
                 .AddSingleton(FakeCommands)
                 .BuildServiceProvider(true);
 
-            this.CommandsNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
+            CommandsNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
                 CaseSensitive = false,
                 IgnoreExtraArguments = true,
 
@@ -122,24 +118,32 @@ namespace KekBot {
                 PrefixResolver = ResolvePrefixAsync,
 
                 EnableDefaultHelp = false,
-                Services = this.Services
+                Services = Services
             });
 
+<<<<<<< HEAD
             this.CommandsNext.CommandErrored += HandleError;
 
             this.CommandsNext.RegisterConverter(new ChoicesConverter());
             this.CommandsNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
             this.CommandsNext.RegisterConverter(new FlagsConverter());
+=======
+            CommandsNext.CommandErrored += PrintError;
 
-            this.CommandsNext.RegisterCommands<TestCommand>();
-            this.CommandsNext.RegisterCommands<PickCommand>();
-            this.CommandsNext.RegisterCommands<PingCommand>();
-            this.CommandsNext.RegisterCommands<OwnerCommands>();
-            this.CommandsNext.RegisterCommands<TestCommandTwo>();
-            this.CommandsNext.RegisterCommands<HelpCommand>();
-            this.CommandsNext.RegisterCommands<FunCommands>();
-            this.CommandsNext.RegisterCommands<QuoteCommand>();
+            CommandsNext.RegisterConverter(new ChoicesConverter());
+            CommandsNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
+>>>>>>> ea76c290d6e9c8c5b0a48227f97af0e2a123bfbf
 
+            CommandsNext.RegisterCommands<TestCommand>();
+            CommandsNext.RegisterCommands<PickCommand>();
+            CommandsNext.RegisterCommands<PingCommand>();
+            CommandsNext.RegisterCommands<OwnerCommands>();
+            CommandsNext.RegisterCommands<TestCommandTwo>();
+            CommandsNext.RegisterCommands<HelpCommand>();
+            CommandsNext.RegisterCommands<FunCommands>();
+            CommandsNext.RegisterCommands<QuoteCommand>();
+
+<<<<<<< HEAD
             if (config.WeebToken == null) {
                 Console.WriteLine("NOT registering weeb commands because no token was found >:(");
             } else {
@@ -154,11 +158,19 @@ namespace KekBot {
             this.Discord.Ready += Ready;
             this.Discord.ClientErrored += DiscordErrored;
             this.Discord.SocketErrored += SocketErrored;
+=======
+            Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
+            Discord.GuildAvailable += GuildAvailable;
+            Discord.Ready += Ready;
+            Discord.ClientErrored += DiscordErrored;
+            Discord.SocketErrored += SocketErrored;
+>>>>>>> ea76c290d6e9c8c5b0a48227f97af0e2a123bfbf
 
-            this.PrefixSettings = new ConcurrentDictionary<ulong, string>();
+            PrefixSettings = new ConcurrentDictionary<ulong, string>();
 
-            this.Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
+            Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
+<<<<<<< HEAD
             this.Lavalink = Discord.UseLavalink();
 
             void RegisterFakeCommands(IHasFakeCommands faker) {
@@ -179,6 +191,9 @@ namespace KekBot {
             IsInitializedStatic = true;
             CommandInfo.AddRange(CommandsNext.RegisteredCommands.Values.Select(cmd => (ICommandInfo)new CommandInfo(cmd)));
             CommandInfo.AddRange(FakeCommands.Values.Distinct().SelectMany(faker => faker.FakeCommandInfo));
+=======
+            Lavalink = Discord.UseLavalink();
+>>>>>>> ea76c290d6e9c8c5b0a48227f97af0e2a123bfbf
         }
 
         private Task SocketErrored(SocketErrorEventArgs e) {
@@ -192,7 +207,7 @@ namespace KekBot {
 
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
         private void DebugLogger_LogMessageReceived(object? sender, DebugLogMessageEventArgs e) {
-            lock (this._logLock) {
+            lock (_logLock) {
                 var fg = Console.ForegroundColor;
                 var bg = Console.BackgroundColor;
 
@@ -226,7 +241,7 @@ namespace KekBot {
 
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.BackgroundColor = ConsoleColor.Black;
-                Console.WriteLine(" [{0:00}] {1}", this.ShardID, e.Message);
+                Console.WriteLine(" [{0:00}] {1}", ShardID, e.Message);
 
                 Console.ForegroundColor = fg;
                 Console.BackgroundColor = bg;
@@ -234,17 +249,23 @@ namespace KekBot {
         }
 
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "I will destroy you")]
+<<<<<<< HEAD
         public async Task StartAsync() {
             this.Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Booting KekBot Shard.", DateTime.Now);
             await Initialized;
             await this.Discord.ConnectAsync();
+=======
+        public Task StartAsync() {
+            Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Booting KekBot Shard.", DateTime.Now);
+            return Discord.ConnectAsync();
+>>>>>>> ea76c290d6e9c8c5b0a48227f97af0e2a123bfbf
         }
 
         private Task Ready(ReadyEventArgs e) {
             e.Client.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "KekBot is ready to roll!", DateTime.Now);
 
-            if (this.GameTimer == null) {
-                this.GameTimer = new Timer(this.GameTimerCallback, e.Client, TimeSpan.Zero, TimeSpan.FromMinutes(15));
+            if (GameTimer == null) {
+                GameTimer = new Timer(GameTimerCallback, e.Client, TimeSpan.Zero, TimeSpan.FromMinutes(15));
             }
             return Task.CompletedTask;
         }
@@ -274,12 +295,27 @@ namespace KekBot {
             return Task.FromResult(pLen);
         }
 
+<<<<<<< HEAD
         private async Task HandleError(CommandErrorEventArgs errorArgs) {
             var error = errorArgs.Exception;
             var ctx = errorArgs.Context;
             switch (error) {
                 case CommandNotFoundException e:
                     await HandleUnknownCommand(ctx, e.CommandName);
+=======
+        private async Task PrintError(CommandErrorEventArgs e) {
+            if (e.Exception is CommandNotFoundException) return;
+            if (e.Exception is ArgumentException) {
+                var cmd = CommandsNext.FindCommand($"help {e.Command.QualifiedName}", out var args);
+                CommandContext fakectx = CommandsNext.CreateFakeContext(e.Context.Member, e.Context.Channel, e.Context.Message.Content, e.Context.Prefix, cmd, args);
+                await CommandsNext.ExecuteCommandAsync(fakectx);
+                return;
+            }
+            if (e.Exception is ChecksFailedException cfe) {
+                if (cfe.FailedChecks.OfType<RequireUserPermissionsAttribute>().Any()) {
+                    var permCheck = cfe.FailedChecks.OfType<RequireUserPermissionsAttribute>().First();
+                    await e.Context.RespondAsync($"Woah there, you don't have the `{permCheck.Permissions.ToPermissionString()}` permission! (Temp message)");
+>>>>>>> ea76c290d6e9c8c5b0a48227f97af0e2a123bfbf
                     return;
 
                 case ArgumentException _: {
