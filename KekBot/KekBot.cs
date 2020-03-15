@@ -1,4 +1,12 @@
-﻿using DSharpPlus;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.CommandsNext.Exceptions;
@@ -9,18 +17,6 @@ using DSharpPlus.Lavalink;
 using KekBot.ArgumentResolvers;
 using KekBot.Commands;
 using KekBot.Utils;
-using Microsoft.Extensions.DependencyInjection;
-using RethinkDb.Driver;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Xml;
 
 namespace KekBot {
     /// <summary>
@@ -65,13 +61,13 @@ namespace KekBot {
         private readonly object _logLock = new object();
 
         public KekBot(Config config, int shardID) {
-            this.ShardID = shardID;
+            ShardID = shardID;
 
-            this.Discord = new DiscordClient(new DiscordConfiguration() {
+            Discord = new DiscordClient(new DiscordConfiguration() {
                 Token = config.Token,
                 TokenType = TokenType.Bot,
                 ShardCount = config.Shards,
-                ShardId = this.ShardID,
+                ShardId = ShardID,
 
                 AutoReconnect = true,
                 ReconnectIndefinitely = true,
@@ -83,9 +79,9 @@ namespace KekBot {
             });
 
             //There aren't any services for now. But I recall hutch saying he was using a ServiceCollection for something, so it's just here.
-            this.Services = new ServiceCollection().BuildServiceProvider(true);
+            Services = new ServiceCollection().BuildServiceProvider(true);
 
-            this.CommandsNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
+            CommandsNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
                 CaseSensitive = false,
                 IgnoreExtraArguments = true,
 
@@ -93,34 +89,34 @@ namespace KekBot {
                 PrefixResolver = ResolvePrefixAsync,
 
                 EnableDefaultHelp = false,
-                Services = this.Services
+                Services = Services
             });
 
-            this.CommandsNext.CommandErrored += PrintError;
+            CommandsNext.CommandErrored += PrintError;
 
-            this.CommandsNext.RegisterConverter(new ChoicesConverter());
-            this.CommandsNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
+            CommandsNext.RegisterConverter(new ChoicesConverter());
+            CommandsNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
 
-            this.CommandsNext.RegisterCommands<TestCommand>();
-            this.CommandsNext.RegisterCommands<PickCommand>();
-            this.CommandsNext.RegisterCommands<PingCommand>();
-            this.CommandsNext.RegisterCommands<OwnerCommands>();
-            this.CommandsNext.RegisterCommands<TestCommandTwo>();
-            this.CommandsNext.RegisterCommands<HelpCommand>();
-            this.CommandsNext.RegisterCommands<FunCommands>();
-            this.CommandsNext.RegisterCommands<QuoteCommand>();
+            CommandsNext.RegisterCommands<TestCommand>();
+            CommandsNext.RegisterCommands<PickCommand>();
+            CommandsNext.RegisterCommands<PingCommand>();
+            CommandsNext.RegisterCommands<OwnerCommands>();
+            CommandsNext.RegisterCommands<TestCommandTwo>();
+            CommandsNext.RegisterCommands<HelpCommand>();
+            CommandsNext.RegisterCommands<FunCommands>();
+            CommandsNext.RegisterCommands<QuoteCommand>();
 
-            this.Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
-            this.Discord.GuildAvailable += GuildAvailable;
-            this.Discord.Ready += Ready;
-            this.Discord.ClientErrored += DiscordErrored;
-            this.Discord.SocketErrored += SocketErrored;
+            Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
+            Discord.GuildAvailable += GuildAvailable;
+            Discord.Ready += Ready;
+            Discord.ClientErrored += DiscordErrored;
+            Discord.SocketErrored += SocketErrored;
 
-            this.PrefixSettings = new ConcurrentDictionary<ulong, string>();
+            PrefixSettings = new ConcurrentDictionary<ulong, string>();
 
-            this.Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
+            Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
-            this.Lavalink = Discord.UseLavalink();
+            Lavalink = Discord.UseLavalink();
         }
 
         private Task SocketErrored(SocketErrorEventArgs e) {
@@ -132,9 +128,9 @@ namespace KekBot {
             return Task.CompletedTask;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
+        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
         private void DebugLogger_LogMessageReceived(object? sender, DebugLogMessageEventArgs e) {
-            lock (this._logLock) {
+            lock (_logLock) {
                 var fg = Console.ForegroundColor;
                 var bg = Console.BackgroundColor;
 
@@ -168,24 +164,24 @@ namespace KekBot {
 
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.BackgroundColor = ConsoleColor.Black;
-                Console.WriteLine(" [{0:00}] {1}", this.ShardID, e.Message);
+                Console.WriteLine(" [{0:00}] {1}", ShardID, e.Message);
 
                 Console.ForegroundColor = fg;
                 Console.BackgroundColor = bg;
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "I will destroy you")]
+        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "I will destroy you")]
         public Task StartAsync() {
-            this.Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Booting KekBot Shard.", DateTime.Now);
-            return this.Discord.ConnectAsync();
+            Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Booting KekBot Shard.", DateTime.Now);
+            return Discord.ConnectAsync();
         }
 
         private Task Ready(ReadyEventArgs e) {
             e.Client.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "KekBot is ready to roll!", DateTime.Now);
 
-            if (this.GameTimer == null) {
-                this.GameTimer = new Timer(this.GameTimerCallback, e.Client, TimeSpan.Zero, TimeSpan.FromMinutes(15));
+            if (GameTimer == null) {
+                GameTimer = new Timer(GameTimerCallback, e.Client, TimeSpan.Zero, TimeSpan.FromMinutes(15));
             }
             return Task.CompletedTask;
         }
@@ -218,9 +214,9 @@ namespace KekBot {
         private async Task PrintError(CommandErrorEventArgs e) {
             if (e.Exception is CommandNotFoundException) return;
             if (e.Exception is ArgumentException) {
-                var cmd = this.CommandsNext.FindCommand($"help {e.Command.QualifiedName}", out var args);
-                CommandContext fakectx = this.CommandsNext.CreateFakeContext(e.Context.Member, e.Context.Channel, e.Context.Message.Content, e.Context.Prefix, cmd, args);
-                await this.CommandsNext.ExecuteCommandAsync(fakectx);
+                var cmd = CommandsNext.FindCommand($"help {e.Command.QualifiedName}", out var args);
+                CommandContext fakectx = CommandsNext.CreateFakeContext(e.Context.Member, e.Context.Channel, e.Context.Message.Content, e.Context.Prefix, cmd, args);
+                await CommandsNext.ExecuteCommandAsync(fakectx);
                 return;
             }
             if (e.Exception is ChecksFailedException cfe) {
