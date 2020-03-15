@@ -15,7 +15,7 @@ namespace KekBot {
         [JsonProperty("dbPassword")]
         public string DbPass { get; private set; }
         [JsonProperty("shards")]
-        public int Shards { get; private set; }
+        public int Shards { get; private set; } = 1;
 
         [JsonProperty("weebToken")]
         public string WeebToken { get; private set; }

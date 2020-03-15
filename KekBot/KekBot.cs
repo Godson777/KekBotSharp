@@ -34,9 +34,9 @@ namespace KekBot {
         static readonly CommandInfoList CommandInfo = new CommandInfoList();
 
         /// <summary>
-        /// Commands that don't exist in CommandsNext's usual system.
+        /// Whether the static stuff has been initialized.
         /// </summary>
-        static readonly FakeCommandsDictionary FakeCommands = new FakeCommandsDictionary();
+        private bool IsInitializedStatic = false;
 
         // TODO: something better.
         private const string Name = "KekBot";
@@ -58,6 +58,11 @@ namespace KekBot {
         public CommandsNextExtension CommandsNext { get; }
 
         /// <summary>
+        /// Commands that don't exist in CommandsNext's usual system.
+        /// </summary>
+        readonly FakeCommandsDictionary FakeCommands = new FakeCommandsDictionary();
+
+        /// <summary>
         /// Gets the Interactivity instnace.
         /// </summary>
         public InteractivityExtension Interactivity { get; }
@@ -73,11 +78,11 @@ namespace KekBot {
         public int ShardID { get; }
 
 
+        private Task _initialized = Task.CompletedTask;
         /// <summary>
-        /// Await this task to wait for this to be ready to handle weeb.sh requests.
+        /// Await this task in StartAsync to wait for everything in this shard to be initialized.
         /// </summary>
-        private Task Initialized { get; set; } = Task.CompletedTask;
-        private void AddInitTask(Task task) => Initialized = Task.WhenAll(new[] { Initialized, task });
+        private Task Initialized { get => _initialized; set => _initialized = Task.WhenAll(new[] { Initialized, value }); }
 
         private Timer GameTimer { get; set; } = null;
         private ConcurrentDictionary<ulong, string> PrefixSettings { get; }
@@ -105,8 +110,8 @@ namespace KekBot {
             });
 
             this.Services = new ServiceCollection()
-                .AddSingleton(FakeCommands)
                 .AddSingleton(CommandInfo)
+                .AddSingleton(FakeCommands)
                 .BuildServiceProvider(true);
 
             this.CommandsNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
@@ -141,8 +146,7 @@ namespace KekBot {
                 Console.WriteLine("Initializing weeb commands");
                 var weebCmds = new WeebCommands(botName: Name, botVersion: Version, weebToken: config.WeebToken);
                 RegisterFakeCommands(weebCmds);
-                // TODO: fix this's docs.
-                AddInitTask(weebCmds.Initialized);
+                Initialized = weebCmds.Initialized;
             }
 
             this.Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
@@ -156,6 +160,25 @@ namespace KekBot {
             this.Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
             this.Lavalink = Discord.UseLavalink();
+
+            void RegisterFakeCommands(IHasFakeCommands faker) {
+                foreach (var name in faker.FakeCommands) {
+                    FakeCommands.Add(name, faker);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Initializing this static stuff requires an instance of this class.
+        /// </summary>
+        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
+        public void InitOnce() {
+            if (IsInitializedStatic) {
+                throw new InvalidOperationException($"The {nameof(KekBot)} class is already initialized!");
+            }
+            IsInitializedStatic = true;
+            CommandInfo.AddRange(CommandsNext.RegisteredCommands.Values.Select(cmd => (ICommandInfo)new CommandInfo(cmd)));
+            CommandInfo.AddRange(FakeCommands.Values.Distinct().SelectMany(faker => faker.FakeCommandInfo));
         }
 
         private Task SocketErrored(SocketErrorEventArgs e) {
@@ -167,7 +190,7 @@ namespace KekBot {
             return Task.CompletedTask;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
+        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
         private void DebugLogger_LogMessageReceived(object? sender, DebugLogMessageEventArgs e) {
             lock (this._logLock) {
                 var fg = Console.ForegroundColor;
@@ -210,21 +233,11 @@ namespace KekBot {
             }
         }
 
-        public async Task InitOnce(KekBot bot, Config config) {
-            CommandInfo.AddRange(bot.CommandsNext.RegisteredCommands.Values.Select(cmd => (ICommandInfo)new CommandInfo(cmd)));
-        }
-
-        private static void RegisterFakeCommands(IHasFakeCommands faker) {
-            CommandInfo.AddRange(faker.FakeCommandInfo);
-            foreach (var name in faker.FakeCommands) {
-                FakeCommands.Add(name, faker);
-            }
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "I will destroy you")]
+        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "I will destroy you")]
         public async Task StartAsync() {
             this.Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Booting KekBot Shard.", DateTime.Now);
-            return this.Discord.ConnectAsync();
+            await Initialized;
+            await this.Discord.ConnectAsync();
         }
 
         private Task Ready(ReadyEventArgs e) {
@@ -289,7 +302,7 @@ namespace KekBot {
                 $"but failed with {error}", DateTime.Now);
         }
 
-        private static async Task HandleUnknownCommand(CommandContext ctx, string cmdName) {
+        private async Task HandleUnknownCommand(CommandContext ctx, string cmdName) {
             if (FakeCommands.TryGetValue(cmdName, out var faker)) {
                 await faker.HandleFakeCommand(ctx, cmdName);
             }
