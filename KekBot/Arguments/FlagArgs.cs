@@ -1,21 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using KekBot.Utils;
 
 namespace KekBot.Arguments {
     internal struct FlagArgs {
 
+        /// <summary>
+        /// Parses things like "--nsfw=only --tags=bdsm"
+        /// </summary>
         private static readonly Regex FlagRegex = new Regex(
             "(?<!\\S)-{1,2}(?<name>[a-zA-Z]+)(?:[:=](?<value>\\S+))(?!\\S)"
         );
+
         private static readonly string[] TruthyValues = new[] { "1", "ON", "YES", "TRUE", "ENABLE", "ENABLED" };
         private static readonly string[] FalsyValues = new[] { "0", "OFF", "NO", "FALSE", "DISABLE", "DISABLED" };
 
+        /// <summary>
+        /// Flag names to their values. It's null if you instantiate the default value of this struct, ofc.
+        /// </summary>
         public readonly Dictionary<string, string>? Flags;
 
+        /// <summary>
+        /// Parse flags from a string.
+        /// </summary>
         public static FlagArgs? ParseString(string s) {
             var flags = FlagRegex.Matches(s).ToDictionary(
                 match => match.Groups["name"].Value.ToUpperInvariant(),
@@ -24,6 +33,9 @@ namespace KekBot.Arguments {
             return flags.Count == 0 ? null : new FlagArgs(flags) as FlagArgs?;
         }
 
+        /// <summary>
+        /// Parse flags from a string, storing the non-flag parts into <paramref name="sWithoutFlags"/>.
+        /// </summary>
         public static FlagArgs? ParseString(string s, out string sWithoutFlags) {
             var matches = FlagRegex.Matches(s);
             sWithoutFlags = RemoveFlagsFrom(s, matches).Trim();
@@ -34,17 +46,10 @@ namespace KekBot.Arguments {
             return flags.Count == 0 ? null : new FlagArgs(flags) as FlagArgs?;
         }
 
-        // TODO: maybe change to just Aggregate()ing a string since there's only gonna be a few flags at most
-        private static string RemoveFlagsFrom(string s, MatchCollection flagMatches) {
-            var builder = new StringBuilder(s);
+        // There'll only be a few flags 99% of the time, so not worth the overhead of a string builder.
+        private static string RemoveFlagsFrom(string s, MatchCollection flagMatches) =>
             // Starting from the right side so the indices don't change when I remove substrings.
-            foreach (var match in flagMatches.Reverse()) {
-                // TODO: remove assertion if my assumptions are proven valid.
-                Util.Assert(match.Success, elsePanicWith: "I clearly misunderstood how matching works.");
-                builder.Remove(match.Index, match.Length);
-            }
-            return builder.ToString();
-        }
+            flagMatches.Reverse().Aggregate(s, (ss, match) => ss.Remove(match.Index, match.Length));
 
         private FlagArgs(Dictionary<string, string> flags) => Flags = flags;
 
