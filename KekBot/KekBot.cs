@@ -105,7 +105,7 @@ namespace KekBot {
                 LogLevel = LogLevel.Debug
             });
 
-            this.Services = new ServiceCollection()
+            Services = new ServiceCollection()
                 .AddSingleton(CommandInfo)
                 .AddSingleton(FakeCommands)
                 .BuildServiceProvider(true);
@@ -121,11 +121,11 @@ namespace KekBot {
                 Services = Services
             });
 
-            this.CommandsNext.CommandErrored += HandleError;
+            CommandsNext.CommandErrored += HandleError;
 
-            this.CommandsNext.RegisterConverter(new ChoicesConverter());
-            this.CommandsNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
-            this.CommandsNext.RegisterConverter(new FlagsConverter());
+            CommandsNext.RegisterConverter(new ChoicesConverter());
+            CommandsNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
+            CommandsNext.RegisterConverter(new FlagsConverter());
 
             CommandsNext.RegisterCommands<TestCommand>();
             CommandsNext.RegisterCommands<PickCommand>();
@@ -145,11 +145,11 @@ namespace KekBot {
                 Initialized = weebCmds.Initialized;
             }
 
-            this.Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
-            this.Discord.GuildAvailable += GuildAvailable;
-            this.Discord.Ready += Ready;
-            this.Discord.ClientErrored += DiscordErrored;
-            this.Discord.SocketErrored += SocketErrored;
+            Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
+            Discord.GuildAvailable += GuildAvailable;
+            Discord.Ready += Ready;
+            Discord.ClientErrored += DiscordErrored;
+            Discord.SocketErrored += SocketErrored;
 
             PrefixSettings = new ConcurrentDictionary<ulong, string>();
 
