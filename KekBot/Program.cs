@@ -1,21 +1,10 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using RethinkDb.Driver;
 using RethinkDb.Driver.Net;
-using DSharpPlus;
-using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Exceptions;
-using DSharpPlus.Entities;
-using DSharpPlus.Interactivity;
-using KekBot.ArgumentResolvers;
-using KekBot.Commands;
 using KekBot.Utils;
-using DSharpPlus.CommandsNext.Builders;
-using DSharpPlus.EventArgs;
-using System.Collections.Generic;
 
 namespace KekBot {
     class Program {
@@ -111,5 +100,6 @@ namespace KekBot {
          * @todo Adjust collecting resources like config.json and others.
          * @body This needs to be edited later, either the location of all the resources should be a commandline argument, or we simply have a commandline argument named --dev or something to differentiate the environment KekBot is in. That way we can test but still have all the proper resources and stuff where they need to be.
          */
+
     }
 }
