@@ -136,7 +136,7 @@ namespace KekBot.Commands {
                 .Select(i => new DiscordEmbedBuilder()
                     .WithTitle(Enum.GetName(typeof(Category), cat))
                     .WithDescription(string.Join("\n", cmds
-                        .GetRange(i, Math.Min(i + 10, cmds.Count))
+                        .GetRange(i, Math.Min(10, cmds.Count - i))
                         .Select(c => $"{c.Name} - {c.Description}")))
                     .WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl)
                     .WithFooter("KekBot v2.0")

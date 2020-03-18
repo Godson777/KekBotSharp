@@ -279,10 +279,12 @@ namespace KekBot {
                     return;
 
                 case ArgumentException _: {
-                        var cmd = CommandsNext.FindCommand($"help {errorArgs.Command.QualifiedName}", out var args);
-                        var fakectx = CommandsNext.CreateFakeContext(ctx.Member, ctx.Channel, ctx.Message.Content, ctx.Prefix, cmd, args);
-                        await CommandsNext.ExecuteCommandAsync(fakectx);
-                        return;
+                        // Remove cuz this swallows important errors >:(
+                        break;
+                        //var cmd = CommandsNext.FindCommand($"help {errorArgs.Command.QualifiedName}", out var args);
+                        //var fakectx = CommandsNext.CreateFakeContext(ctx.Member, ctx.Channel, ctx.Message.Content, ctx.Prefix, cmd, args);
+                        //await CommandsNext.ExecuteCommandAsync(fakectx);
+                        //return;
                     }
 
                 case ChecksFailedException e when e.FailedChecks.OfType<RequireUserPermissionsAttribute>().Any(): {
