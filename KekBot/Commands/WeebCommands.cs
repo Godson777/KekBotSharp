@@ -19,13 +19,31 @@ namespace KekBot.Commands {
 
         internal static readonly WeebCmdInfo[] FakeCommandInfo = new WeebCmdInfo[] {
             new WeebCmdInfo("awoo", "AWOOOOOOOOO",
-                msg: "AWOOOOO"),
+                "AWOOOOO"),
             new WeebCmdInfo("bite", "Bites the living HECK out of someone.",
-                msg: "{0} was bit by {1}!", mentionsUser: true),
+                "{0} was bit by {1}!", mentionsUser: true),
             new WeebCmdInfo("cry", ":(((((((",
-                msg: ":CCCCCCC"),
+                ":CCCCCCC"),
             new WeebCmdInfo("cuddle", "Cuddles a person.",
-                msg: "{0} was cuddled by {1}.", mentionsUser: true),
+                "{0} was cuddled by {1}.", mentionsUser: true),
+            new WeebCmdInfo("dab", "<o/",
+                @"<o/ \o>"),
+            new WeebCmdInfo("dance", "ᕕ( ᐛ )ᕗ",
+                "ᕕ( ᐛ )ᕗ"),
+            new WeebCmdInfo("deredere", "Because we couldn't get a tsundere command",
+                "❤❤❤❤"),
+            new WeebCmdInfo("hug", "Hugs a person.",
+                "{0} was hugged by {1}.", mentionsUser: true),
+            new WeebCmdInfo("kiss", "Kisses a person.",
+                "{0} was kissed by {1}.", mentionsUser: true),
+            new WeebCmdInfo("lewd", "For those l-lewd moments...",
+                "Did someone say l-lewd?"),
+            new WeebCmdInfo("lick", "Licks a person.",
+                "{0} was licked by {1}!", mentionsUser: true),
+            new WeebCmdInfo("neko", "Because we all need nekos in our lives.",
+                "Did someone call for a neko? :3"),
+            new WeebCmdInfo("nom", "nomnomnomnomnomnomnomnom",
+                "{0} got nomed on by {1}! omnomnom...", mentionsUser: true),
         };
 
         ICommandInfo[] IHasFakeCommands.FakeCommandInfo => Array.ConvertAll(FakeCommandInfo, cmdInfo => (ICommandInfo)cmdInfo);
@@ -176,11 +194,17 @@ namespace KekBot.Commands {
             public WeebCmdInfo(string type, string description, string msg, bool mentionsUser = false) {
                 Name = type;
                 Description = description;
+
+                if (msg.Contains("%s")) {
+                    throw new ArgumentException(paramName: nameof(msg),
+                        message: "You forgot to replace the '%s' things, dummy.");
+                }
+                var matches = FormatThingies.Matches(msg).AsEnumerable();
                 if (mentionsUser) {
                     Overloads = Util.ImmutableArrayFromSingle<ICommandOverloadInfo>(
                         new WeebOverloadMention()
                     );
-                    foreach (var match in FormatThingies.Matches(msg).AsEnumerable()) {
+                    foreach (var match in matches) {
                         if (!int.TryParse(match.Groups["num"].Value, out var num) ||
                             (num != 0 && num != 1)) {
                             throw new ArgumentOutOfRangeException(paramName: nameof(msg),
@@ -191,7 +215,12 @@ namespace KekBot.Commands {
                     Overloads = Util.ImmutableArrayFromSingle<ICommandOverloadInfo>(
                         new WeebOverload()
                     );
+                    if (matches.Any()) {
+                        throw new ArgumentException(paramName: nameof(msg),
+                            message: "Msg cannot use substitutions when there are no mentions to substitute");
+                    }
                 }
+
                 Msg = msg;
                 MentionsUser = mentionsUser;
             }
