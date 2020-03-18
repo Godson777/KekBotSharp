@@ -143,6 +143,15 @@ namespace KekBot.Utils {
 
         internal static int ParseInt(string intStr, int fallback) => int.TryParse(intStr, out var n) ? n : fallback;
 
+        /// <summary>
+        /// Joins the enumerable if it's non-null and nonempty or returns a fallback string.
+        /// </summary>
+        internal static string Join<T>(IEnumerable<T>? coll, Func<T, string>? stringifier = null,
+            string sep = ", ", string fallback = "none") =>
+            (coll == null || !coll.Any())
+                ? fallback
+                : string.Join(sep, coll.Select(stringifier ?? (x => x?.ToString() ?? "null")));
+
 
         /// <summary>
         /// This only exists for type inference.

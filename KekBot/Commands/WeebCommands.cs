@@ -78,10 +78,12 @@ namespace KekBot.Commands {
         string[] IHasFakeCommands.FakeCommands => FakeCommands;
 
         // This gets initialized before the bot starts responding to commands
-        private WeebClient WeebClient;
+        private readonly WeebClient WeebClient;
 
         private const string EmbedFooter = "Powered by Weeb.sh!";
         private const string FailureMsg = "Failed to retrieve image";
+        private const string FailureMsgNsfw = "This type probably has no NSFW images.";
+        private const string FailureMsgSearch = "There were probably no results for your search.";
 
         /// <summary>
         /// Await this task to wait for this to be ready to handle weeb.sh requests.
@@ -125,13 +127,17 @@ namespace KekBot.Commands {
             await ctx.TriggerTypingAsync();
 
             var tags = flags.Get("tags").NonEmpty()?.Split(',') ?? Array.Empty<string>();
-            var hidden = flags.ParseBool("hidden") ?? false;
-            var nsfw = CheckNsfw(ctx, flags);
+            var hiddenFlag = flags.ParseBool("hidden");
+            var requestHidden = hiddenFlag ?? false;
+            var nsfwFlag = flags.ParseEnum<NsfwSearch>("nsfw");
+            var requestNsfw = ctx.Channel.IsNSFW
+                ? (nsfwFlag ?? NsfwSearch.True)
+                : NsfwSearch.False;
             await ctx.RespondAsync($"```\nDoing a search with:\n" +
                 $"type: {type}\n" +
                 $"tags: {tags} (length {tags.Length})\n" +
-                $"hidden: {hidden}\n" +
-                $"nsfw: {nsfw}\n" +
+                $"hidden: {requestHidden}\n" +
+                $"nsfw: {requestNsfw}\n" +
                 $"```");
 
             var builder = new DiscordEmbedBuilder();
@@ -139,14 +145,46 @@ namespace KekBot.Commands {
                 type: type,
                 tags: tags,
                 //fileType: FileType.Any,
-                hidden: hidden,
-                nsfw: nsfw
+                hidden: requestHidden,
+                nsfw: requestNsfw
             );
             if (image == null) {
                 builder.WithTitle(FailureMsg);
+
+                if (tags.Length > 0 || hiddenFlag != null) {
+                    builder.WithDescription(FailureMsgSearch);
+                } else if (requestNsfw == NsfwSearch.Only) {
+                    builder.WithDescription(FailureMsgNsfw);
+                }
             } else {
-                builder.WithTitle(msg)
-                    .WithImageUrl(new Uri(image.Url));
+                builder.WithTitle(msg).WithImageUrl(new Uri(image.Url));
+
+                var tagStr = Util.Join(image.Tags, tag => {
+                    var extraInfo = string.Join("; ", new string[] {
+                        tag.Hidden ? "hidden" : "",
+                        string.IsNullOrEmpty(tag.User) ? "" : $"user {tag.User}",
+                    }.Where(s => s.Length > 0));
+                    return tag.Name + (extraInfo.Length > 0
+                        ? $" ({extraInfo})"
+                        : "");
+                });
+                builder.AddField("Tags", tagStr, inline: true);
+
+                if (nsfwFlag != null || ctx.Channel.IsNSFW || image.Nsfw) {
+                    if (!ctx.Channel.IsNSFW && image.Nsfw) {
+                        await ctx.RespondAsync("For some reason Weeb.sh gave me a NSFW image, but this is a SFW channel!");
+                        return;
+                    }
+
+                    var nsfwStr = image.Nsfw
+                        ? "yes"
+                        : (ctx.Channel.IsNSFW ? "no" : "not allowed in SFW channels");
+                    builder.AddField("NSFW", nsfwStr, inline: true);
+                }
+
+                if (hiddenFlag != null || image.Hidden) {
+                    builder.AddField("Hidden", image.Hidden ? "yes" : "no", inline: true);
+                }
             }
             builder.WithFooter(EmbedFooter);
 
@@ -221,7 +259,7 @@ namespace KekBot.Commands {
                 Name = type;
                 Description = description;
 
-                if (msg.Contains("%s")) {
+                if (msg.Contains("%s", StringComparison.Ordinal)) {
                     throw new ArgumentException(paramName: nameof(msg),
                         message: "You forgot to replace the '%s' things, dummy.");
                 }
