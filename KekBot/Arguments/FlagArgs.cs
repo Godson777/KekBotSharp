@@ -11,7 +11,7 @@ namespace KekBot.Arguments {
         /// Parses things like "--nsfw=only --tags=bdsm"
         /// </summary>
         private static readonly Regex FlagRegex = new Regex(
-            "(?<!\\S)-{1,2}(?<name>[a-zA-Z]+)(?:[:=](?<value>\\S+))(?!\\S)"
+            "(?<!\\S)-{1,2}(?<name>[a-zA-Z]+)(?:[:=](?<value>\\S+))?(?!\\S)"
         );
 
         private static readonly string[] TruthyValues = new[] { "1", "ON", "YES", "TRUE", "ENABLE", "ENABLED" };
