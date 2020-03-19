@@ -9,6 +9,7 @@ using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using KekBot.Attributes;
+using KekBot.Lib;
 using KekBot.Menu;
 using KekBot.Utils;
 
@@ -16,6 +17,14 @@ namespace KekBot.Commands {
     class HelpCommand : BaseCommandModule {
 
         private const string tagline = "KekBot, your friendly meme based bot!";
+
+        private CommandInfoList CommandInfo { get; }
+        private FakeCommandsDictionary FakeCommands { get; }
+
+        public HelpCommand(CommandInfoList commandInfo, FakeCommandsDictionary fakeCommands) {
+            CommandInfo = commandInfo;
+            FakeCommands = fakeCommands;
+        }
 
         [Command("help"), Description("You're already here, aren't you?"), Category(Category.General)]
         async Task Help(
@@ -27,7 +36,10 @@ namespace KekBot.Commands {
                 await DisplayCategoryHelp(ctx);
             } else if (ctx.CommandsNext.FindCommand(query, out var _) is Command cmd) {
                 //Print the command help, if the command has been found.
-                await DisplayCommandHelp(ctx, cmd);
+                await DisplayCommandHelp(ctx, CommandInfo.GetFor(cmd));
+            } else if (FakeCommands.Contains(query)) {
+                //Print the command help, if the (fake) command has been found.
+                await DisplayCommandHelp(ctx, CommandInfo.GetFor(query));
             } else if (Enum.TryParse(query, true, out Category cat)) {
                 //Command wasn't found, is it a category?
                 await DisplayCategoryHelp(ctx, cat);
@@ -37,7 +49,7 @@ namespace KekBot.Commands {
             }
         }
 
-        private static async Task DisplayCommandHelp(CommandContext ctx, Command cmd) {
+        private static async Task DisplayCommandHelp(CommandContext ctx, ICommandInfo cmd) {
             //Setup the embed.
             var aliases = string.Join(", ", cmd.Aliases.Select(alias => $"`{alias}`"));
             var embed = new DiscordEmbedBuilder()
@@ -46,9 +58,10 @@ namespace KekBot.Commands {
                 .WithAuthor(name: tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl);
             //Prepare ourselves for usage
             var usage = new StringBuilder();
+            //Try the cast once.
+            var group = cmd.Cmd as CommandGroup;
             //The total count of subcommands and overloads.
-            //LITERALLY THE CMD IS COMMANDGROUP THING IS ONLY HERE BECAUSE VS HATED WHEN I TRIED TO DO ANYTHING ELSE.
-            var count = cmd.Overloads.Count + (cmd is CommandGroup ? (cmd as CommandGroup).Children.Count : 0);
+            var count = cmd.Overloads.Length + (group?.Children.Count ?? 0);
 
             //The following loop handles overloads.
             foreach (var ovrld in cmd.Overloads) {
@@ -57,19 +70,20 @@ namespace KekBot.Commands {
             }
 
             //Do we have any subcommands?
-            if (cmd is CommandGroup group) {
+            if (group != null) {
                 //The following loop handles subcommands and their appropriate usage.
                 foreach (var subcmd in group.Children) {
                     if (subcmd.Overloads.Count > 1 || subcmd is CommandGroup)
                         usage.AppendLine($"`{cmd.Name} {subcmd.Name}`: Visit `help {cmd.Name} {subcmd.Name}` for more information.");
                     else
-                        AppendOverload(subcmd.Overloads.Single(), subcmd);
+                        AppendOverload(new CommandOverloadInfo(subcmd.Overloads.Single()), subcmd);
                 }
             }
 
             //I heard you like methods, so I put a method in your method.
-            void AppendOverload(CommandOverload ovrld, Command? subcmd = null) {
-                var ovrldHasArgs = ovrld.Arguments.Count > 0;
+            void AppendOverload(ICommandOverloadInfo ovrld, Command? subcmd = null) {
+                var args = ovrld.Arguments.Where(arg => !arg.IsHidden);
+                var ovrldHasArgs = args.Any();
 
                 usage.Append("`");
                 usage.Append(cmd.Name);
@@ -78,7 +92,7 @@ namespace KekBot.Commands {
                 if (ovrldHasArgs) {
                     usage.Append(" ");
                     //We have arguments, let's print them.
-                    usage.AppendJoin(" ", ovrld.Arguments.Select(arg => (arg.IsOptional && !arg.IsCustomRequired()) ? $"({arg.Name})" : $"[{arg.Name}]"));
+                    usage.AppendJoin(" ", args.Select(arg => arg.IsOptional ? $"({arg.Name})" : $"[{arg.Name}]"));
                 }
                 usage.Append("`");
 
@@ -88,7 +102,7 @@ namespace KekBot.Commands {
                 if (count <= 6) {
                     //Second argument loop for descriptions (if count is short)
                     if (ovrldHasArgs)
-                        usage.AppendLines(ovrld.Arguments.Select(arg => $"`{arg.Name}`: {arg.Description}"));
+                        usage.AppendLines(args.Select(arg => $"`{arg.Name}`: {arg.Description}"));
                     usage.AppendLine();
                 }
             }
@@ -97,7 +111,7 @@ namespace KekBot.Commands {
             await ctx.RespondAsync(embed: embed);
         }
 
-        private static async Task DisplayCategoryHelp(CommandContext ctx, Category? catOrAll = null) {
+        private async Task DisplayCategoryHelp(CommandContext ctx, Category? catOrAll = null) {
             var paginator = new EmbedPaginator(ctx.Client.GetInteractivity()) {
                 ShowPageNumbers = true
             };
@@ -107,12 +121,14 @@ namespace KekBot.Commands {
                 ? GetCategoryPages(ctx, cat)
                 : Enum.GetValues(typeof(Category)).Cast<Category>().SelectMany(cat => GetCategoryPages(ctx, cat)));
 
+            Util.Assert(paginator.Embeds.Count > 0, elsePanicWith: "no commands???");
+
             await paginator.Display(ctx.Channel);
         }
 
-        private static IEnumerable<DiscordEmbed> GetCategoryPages(CommandContext ctx, Category cat) {
-            var cmds = ctx.CommandsNext.RegisteredCommands.Values
-                .Where(c => c.GetCategory() == cat)
+        private IEnumerable<DiscordEmbed> GetCategoryPages(CommandContext ctx, Category cat) {
+            var cmds = CommandInfo
+                .Where(c => c.Category == cat)
                 .OrderBy(c => c.Name)
                 .Distinct()
                 .ToList();
@@ -120,7 +136,7 @@ namespace KekBot.Commands {
                 .Select(i => new DiscordEmbedBuilder()
                     .WithTitle(Enum.GetName(typeof(Category), cat))
                     .WithDescription(string.Join("\n", cmds
-                        .GetRange(i, Math.Min(i + 10, cmds.Count))
+                        .GetRange(i, Math.Min(10, cmds.Count - i))
                         .Select(c => $"{c.Name} - {c.Description}")))
                     .WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl)
                     .WithFooter("KekBot v2.0")

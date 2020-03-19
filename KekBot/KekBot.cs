@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -25,6 +26,20 @@ namespace KekBot {
     /// </summary>
     public sealed class KekBot {
         /// <summary>
+        /// Info on all commands, "real" and "fake".
+        /// </summary>
+        static readonly CommandInfoList CommandInfos = new CommandInfoList();
+
+        /// <summary>
+        /// Whether the static stuff has been initialized.
+        /// </summary>
+        private bool IsInitializedStatic = false;
+
+        // TODO: something better.
+        private const string Name = "KekBot";
+        private const string Version = "2.0";
+
+        /// <summary>
         /// The tag used when emitting log events from the bot.
         /// </summary>
         public const string LOGTAG = "KekBot";
@@ -38,6 +53,11 @@ namespace KekBot {
         /// Gets the CommandsNext instance.
         /// </summary>
         public CommandsNextExtension CommandsNext { get; }
+
+        /// <summary>
+        /// Commands that don't exist in CommandsNext's usual system.
+        /// </summary>
+        readonly FakeCommandsDictionary FakeCommands = new FakeCommandsDictionary();
 
         /// <summary>
         /// Gets the Interactivity instnace.
@@ -55,12 +75,18 @@ namespace KekBot {
         public int ShardID { get; }
 
 
+        /// <summary>
+        /// Await all of these tasks in StartAsync to wait for everything in this shard to be initialized.
+        /// </summary>
+        private readonly List<Task> ThingsToWaitFor = new List<Task>();
+
         private Timer GameTimer { get; set; } = null;
         private ConcurrentDictionary<ulong, string> PrefixSettings { get; }
         private IServiceProvider Services { get; }
 
         private readonly object _logLock = new object();
 
+        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Running the bot requires knowledge of English")]
         public KekBot(Config config, int shardID) {
             ShardID = shardID;
 
@@ -79,8 +105,20 @@ namespace KekBot {
                 LogLevel = LogLevel.Debug
             });
 
-            //There aren't any services for now. But I recall hutch saying he was using a ServiceCollection for something, so it's just here.
-            this.Services = new ServiceCollection().AddSingleton<MusicService>().AddSingleton(new YouTubeSearchProvider()).AddSingleton(new LavalinkService(this.Discord)).BuildServiceProvider(true);
+            Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
+            Discord.GuildAvailable += GuildAvailable;
+            Discord.Ready += Ready;
+            Discord.ClientErrored += DiscordErrored;
+            Discord.SocketErrored += SocketErrored;
+
+            Services = new ServiceCollection()
+                .AddSingleton(CommandInfos)
+                .AddSingleton(FakeCommands)
+                .AddSingleton(new WeebCommands.WeebCmdsCtorArgs(botName: Name, botVersion: Version, weebToken: config.WeebToken))
+                .AddSingleton(new YouTubeSearchProvider())
+                .AddSingleton<MusicService>()
+                .AddSingleton(new LavalinkService(this.Discord))
+                .BuildServiceProvider(true);
 
             CommandsNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
                 CaseSensitive = false,
@@ -93,10 +131,11 @@ namespace KekBot {
                 Services = Services
             });
 
-            CommandsNext.CommandErrored += PrintError;
+            CommandsNext.CommandErrored += HandleError;
 
             CommandsNext.RegisterConverter(new ChoicesConverter());
             CommandsNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
+            CommandsNext.RegisterConverter(new FlagsConverter());
 
             this.CommandsNext.RegisterCommands<TestCommand>();
             this.CommandsNext.RegisterCommands<PickCommand>();
@@ -109,17 +148,47 @@ namespace KekBot {
             this.CommandsNext.RegisterCommands<MemeCommands>();
             this.CommandsNext.RegisterCommands<MusicCommand>();
 
-            this.Discord.DebugLogger.LogMessageReceived += LogMessageReceived;
-            this.Discord.GuildAvailable += GuildAvailable;
-            this.Discord.Ready += Ready;
-            this.Discord.ClientErrored += DiscordErrored;
-            this.Discord.SocketErrored += SocketErrored;
+            if (config.WeebToken == null) {
+                Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "NOT registering weeb commands because no token was found >:(", DateTime.Now);
+            } else {
+                Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Initializing weeb commands", DateTime.Now);
+                CommandsNext.RegisterCommands<WeebCommands>();
+            }
+
+            var modules = CommandsNext.RegisteredCommands.Values
+                .Select(cmd => cmd.Module)
+                .OfType<DSharpPlus.CommandsNext.Entities.SingletonCommandModule>()
+                .Select(mod => mod.Instance)
+                .Distinct();
+            foreach (var module in modules) {
+                if (module is INeedsInitialized initer) {
+                    ThingsToWaitFor.Add(initer.Initialize());
+                }
+                if (module is IHasFakeCommands faker) {
+                    foreach (var name in faker.FakeCommands) {
+                        FakeCommands.Add(name, faker);
+                    }
+                }
+            }
 
             PrefixSettings = new ConcurrentDictionary<ulong, string>();
 
             Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
             Lavalink = Discord.UseLavalink();
+        }
+
+        /// <summary>
+        /// Initializing this static stuff requires an instance of this class.
+        /// </summary>
+        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
+        public void InitOnce() {
+            if (IsInitializedStatic) {
+                throw new InvalidOperationException($"The {nameof(KekBot)} class is already initialized!");
+            }
+            IsInitializedStatic = true;
+            CommandInfos.AddRange(CommandsNext.RegisteredCommands.Values.Select(CommandInfo.From));
+            CommandInfos.AddRange(FakeCommands.Values.Distinct().SelectMany(faker => faker.FakeCommandInfo));
         }
 
         private Task SocketErrored(SocketErrorEventArgs e) {
@@ -175,9 +244,10 @@ namespace KekBot {
         }
 
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "I will destroy you")]
-        public Task StartAsync() {
+        public async Task StartAsync() {
             Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Booting KekBot Shard.", DateTime.Now);
-            return Discord.ConnectAsync();
+            await Task.WhenAll(ThingsToWaitFor);
+            await Discord.ConnectAsync();
         }
 
         private Task Ready(ReadyEventArgs e) {
@@ -214,26 +284,40 @@ namespace KekBot {
             return Task.FromResult(pLen);
         }
 
-        private async Task PrintError(CommandErrorEventArgs e) {
-            if (e.Exception is CommandNotFoundException) return;
-            /*if (e.Exception is ArgumentException) {
-                var cmd = this.CommandsNext.FindCommand($"help {e.Command.QualifiedName}", out var args);
-                CommandContext fakectx = this.CommandsNext.CreateFakeContext(e.Context.Member, e.Context.Channel, e.Context.Message.Content, e.Context.Prefix, cmd, args);
-                await this.CommandsNext.ExecuteCommandAsync(fakectx);
-                return;
-            }*/
-            if (e.Exception is CommandCancelledException) return;
-            if (e.Exception is ChecksFailedException cfe) {
-                if (cfe.FailedChecks.OfType<RequireUserPermissionsAttribute>().Any()) {
-                    var permCheck = cfe.FailedChecks.OfType<RequireUserPermissionsAttribute>().First();
-                    await e.Context.RespondAsync($"Woah there, you don't have the `{permCheck.Permissions.ToPermissionString()}` permission! (Temp message)");
+        private async Task HandleError(CommandErrorEventArgs errorArgs) {
+            var error = errorArgs.Exception;
+            var ctx = errorArgs.Context;
+            switch (error) {
+                case CommandNotFoundException e:
+                    await HandleUnknownCommand(ctx, e.CommandName);
                     return;
-                }
+
+                case ArgumentException _: {
+                        // Remove cuz this swallows important errors >:(
+                        break;
+                        //var cmd = CommandsNext.FindCommand($"help {errorArgs.Command.QualifiedName}", out var args);
+                        //var fakectx = CommandsNext.CreateFakeContext(ctx.Member, ctx.Channel, ctx.Message.Content, ctx.Prefix, cmd, args);
+                        //await CommandsNext.ExecuteCommandAsync(fakectx);
+                        //return;
+                    }
+
+                case ChecksFailedException e when e.FailedChecks.OfType<RequireUserPermissionsAttribute>().Any(): {
+                        var permCheck = e.FailedChecks.OfType<RequireUserPermissionsAttribute>().First();
+                        await ctx.RespondAsync($"Woah there, you don't have the `{permCheck.Permissions.ToPermissionString()}` permission! (Temp message)");
+                        return;
+                    }
             }
-            await e.Context.Channel.SendMessageAsync($"An error occured: {e.Exception.Message}");
-            e.Context.Client.DebugLogger.LogMessage(LogLevel.Error, LOGTAG, 
-                $"User '{e.Context.User.Username}#{e.Context.User.Discriminator}' ({e.Context.User.Id}) tried to execute '{e.Command?.QualifiedName ?? "UNKNOWN COMMAND?"}' " +
-                $"but failed with {e.Exception}", DateTime.Now);
+
+            await ctx.Channel.SendMessageAsync($"An error occured: {error.Message}");
+            ctx.Client.DebugLogger.LogMessage(LogLevel.Error, LOGTAG, 
+                $"User '{ctx.User.Username}#{ctx.User.Discriminator}' ({ctx.User.Id}) tried to execute '{errorArgs.Command?.QualifiedName ?? "UNKNOWN COMMAND?"}' " +
+                $"but failed with {error}", DateTime.Now);
+        }
+
+        private async Task HandleUnknownCommand(CommandContext ctx, string cmdName) {
+            if (FakeCommands.TryGetValue(cmdName, out var faker)) {
+                await faker.HandleFakeCommand(ctx, cmdName);
+            }
         }
 
         private async void GameTimerCallback(object _) {

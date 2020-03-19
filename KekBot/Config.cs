@@ -17,6 +17,9 @@ namespace KekBot {
         [JsonProperty("shards")]
         public int Shards { get; private set; } = 1;
 
+        [JsonProperty("weebToken")]
+        public string WeebToken { get; private set; }
+
         private static Config _instance;
 
         public static async Task<Config> Get() {

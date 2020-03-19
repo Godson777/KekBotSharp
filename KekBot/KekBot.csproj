@@ -29,6 +29,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="RethinkDb.Driver" Version="2.3.150" />
+    <PackageReference Include="Weeb.net" Version="1.0.7" />
   </ItemGroup>
 
 </Project>

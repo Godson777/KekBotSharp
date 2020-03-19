@@ -11,5 +11,8 @@ namespace KekBot {
         public static bool IsCustomRequired(this CommandArgument arg) =>
             arg?.CustomAttributes.OfType<RequiredAttribute>().Any() ?? false;
 
+        public static bool IsHidden(this CommandArgument arg) =>
+            arg?.CustomAttributes.OfType<HiddenParam>().Any() ?? false;
+
     }
 }

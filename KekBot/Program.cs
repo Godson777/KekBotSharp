@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using RethinkDb.Driver;
 using RethinkDb.Driver.Net;
@@ -50,6 +51,7 @@ namespace KekBot {
             for (int i = 0; i < config.Shards; i++) {
                 Shards[i] = new KekBot(config, i);
             }
+            Shards.Values.First().InitOnce();
 
             Console.WriteLine("Loading Completed! Booting shards!");
             Console.WriteLine("----------------------------------");
@@ -62,7 +64,6 @@ namespace KekBot {
 
             await Task.Delay(-1);
         }
-
 
         /// <summary>
         /// Verifies if the all the tables exist in our database.
