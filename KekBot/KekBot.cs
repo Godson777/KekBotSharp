@@ -19,6 +19,7 @@ using KekBot.ArgumentResolvers;
 using KekBot.Commands;
 using KekBot.Services;
 using KekBot.Utils;
+using KekBot.Lib;
 
 namespace KekBot {
     /// <summary>
