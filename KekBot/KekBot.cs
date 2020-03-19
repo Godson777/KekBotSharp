@@ -143,7 +143,6 @@ namespace KekBot {
             CommandsNext.RegisterCommands<FunCommands>();
             CommandsNext.RegisterCommands<QuoteCommand>();
 
-            // TODO: I just realized this would print for every shard. Move this somewhere else?
             if (config.WeebToken == null) {
                 Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "NOT registering weeb commands because no token was found >:(", DateTime.Now);
             } else {
