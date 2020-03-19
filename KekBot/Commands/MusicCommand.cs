@@ -159,7 +159,7 @@ namespace KekBot.Commands {
                     break;
             }
             this.GuildMusic.SetRepeatMode(mode);
-            await ctx.RespondAsync($"Repeat mode is now set to: {Enum.GetName(typeof(RepeatMode), mode)}");
+            await ctx.RespondAsync($"Repeat mode is now set to: **{Enum.GetName(typeof(RepeatMode), mode)}**");
         }
 
         [Command("skip"), Description("Skips a track. (Or X tracks if specified.) (Host Only)"), RequiresMusicHost]
@@ -239,17 +239,26 @@ namespace KekBot.Commands {
         
         //TODO: This would be the perfect place to make use of "Extended Description".
         [Command("seek"), Description("Seeks to a specified time in the current track.")]
-        async Task Seek(CommandContext ctx, [RemainingText, Description("Which time to seek to.")] TimeSpan Time) {
+        async Task Seek(CommandContext ctx, [RemainingText, Description("Which time to seek to. (Example: 1 minute is `1m`)")] TimeSpan Time) {
+            if (Time > this.GuildMusic.NowPlaying.Track.Length) {
+                if (this.GuildMusic.Queue.Count > 0) await Skip(ctx);
+                else await Stop(ctx);
+            }
             await this.GuildMusic.SeekAsync(Time, false);
         }
 
-        [Command("forward"), Aliases("fastforward", "ff"), Description("Seeks to a specified time in the current track.")]
-        async Task Forward(CommandContext ctx, [RemainingText, Description("Which time to seek to.")] TimeSpan Time) {
+        [Command("forward"), Aliases("fastforward", "ff"), Description("Fast Fowards by a specified time in the current track.")]
+        [ExtendedDescription("")]
+        async Task Forward(CommandContext ctx, [RemainingText, Description("Which time to fast forward to. (Example: 1 minute is `1m`)")] TimeSpan Time) {
+            if (Time > this.GuildMusic.NowPlaying.Track.Length - this.GuildMusic.GetCurrentPosition()) {
+                if (this.GuildMusic.Queue.Count > 0) await Skip(ctx);
+                else await Stop(ctx);
+            }
             await this.GuildMusic.SeekAsync(Time, true);
         }
 
-        [Command("rewind"), Description("Seeks to a specified time in the current track.")]
-        async Task Rewind(CommandContext ctx, [RemainingText, Description("Which time to seek to.")] TimeSpan Time) {
+        [Command("rewind"), Description("Rewinds by a specified time in the current track."), ExtendedDescription("")]
+        async Task Rewind(CommandContext ctx, [RemainingText, Description("Which time to rewind to. (Example: 1 minute is `1m`)")] TimeSpan Time) {
             await this.GuildMusic.SeekAsync(-Time, true);
         }
     }
