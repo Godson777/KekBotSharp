@@ -130,20 +130,16 @@ namespace KekBot.Commands {
         ) {
             await ctx.TriggerTypingAsync();
 
-            var tags = flags.Get("tags").NonEmpty()?.Split(',') ?? Array.Empty<string>();
-            var hiddenFlag = flags.ParseBool("hidden");
-            var requestHidden = hiddenFlag ?? false;
-            var nsfwFlag = flags.ParseEnum<NsfwSearch>("nsfw");
+            var requestTags = flags.Get("tags").NonEmpty()?.Split(',') ?? Array.Empty<string>();
+            var requestHidden = flags.ParseBool("hidden") ?? false;
             var requestNsfw = ctx.Channel.IsNSFW
-                ? (nsfwFlag ?? NsfwSearch.True)
+                ? (flags.ParseEnum<NsfwSearch>("nsfw") ?? NsfwSearch.True)
                 : NsfwSearch.False;
-            var debugFlag = flags.ParseBool("debug");
-            var debug = debugFlag ?? false;
 
             var builder = new DiscordEmbedBuilder();
             RandomData? image = await WeebClient.GetRandomAsync(
                 type: type,
-                tags: tags,
+                tags: requestTags,
                 //fileType: FileType.Any,
                 hidden: requestHidden,
                 nsfw: requestNsfw
@@ -151,39 +147,37 @@ namespace KekBot.Commands {
             if (image == null) {
                 builder.WithTitle(FailureMsg);
 
-                if (tags.Length > 0 || hiddenFlag != null) {
+                if (requestTags.Length > 0 || requestHidden) {
                     builder.WithDescription(FailureMsgSearch);
                 } else if (requestNsfw == NsfwSearch.Only) {
                     builder.WithDescription(FailureMsgNsfw);
                 }
             } else {
+                if (!ctx.Channel.IsNSFW && image.Nsfw) {
+                    await ctx.RespondAsync("For some reason Weeb.sh gave me a NSFW image, but this is a SFW channel!");
+                    return;
+                }
+
                 builder.WithTitle(msg).WithImageUrl(new Uri(image.Url));
 
-                var tagStr = Util.Join(image.Tags, tag => {
-                    var extraInfo = string.Join("; ", new string[] {
-                        tag.Hidden ? "hidden" : "",
-                        string.IsNullOrEmpty(tag.User) ? "" : $"user {tag.User}",
-                    }.Where(s => s.Length > 0));
-                    return tag.Name + (extraInfo.Length > 0
-                        ? $" ({extraInfo})"
-                        : "");
-                });
-                if (debug) builder.AddField("Tags", tagStr, inline: true);
-
-                if (nsfwFlag != null || ctx.Channel.IsNSFW || image.Nsfw) {
-                    if (!ctx.Channel.IsNSFW && image.Nsfw) {
-                        await ctx.RespondAsync("For some reason Weeb.sh gave me a NSFW image, but this is a SFW channel!");
-                        return;
-                    }
+                if (flags.ParseBool("debug") ?? false) {
+                    var tagStr = Util.Join(image.Tags, tag => {
+                        var extraInfo = string.Join("; ", new string[] {
+                            tag.Hidden ? "hidden" : "",
+                            string.IsNullOrEmpty(tag.User) ? "" : $"user {tag.User}",
+                        }.Where(s => s.Length > 0));
+                        return tag.Name + (extraInfo.Length > 0
+                            ? $" ({extraInfo})"
+                            : "");
+                    });
+                    builder.AddField("Tags", tagStr, inline: true);
 
                     var nsfwStr = image.Nsfw
                         ? "yes"
                         : (ctx.Channel.IsNSFW ? "no" : "not allowed in SFW channels");
-                    if (debug) builder.AddField("NSFW", nsfwStr, inline: true);
-                }
+                    builder.AddField("NSFW", nsfwStr, inline: true);
 
-                if (hiddenFlag != null || image.Hidden) {
-                    if (debug) builder.AddField("Hidden", image.Hidden ? "yes" : "no", inline: true);
+                    builder.AddField("Hidden", image.Hidden ? "yes" : "no", inline: true);
                 }
             }
             builder.WithFooter(EmbedFooter);
