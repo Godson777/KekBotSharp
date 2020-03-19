@@ -237,7 +237,6 @@ namespace KekBot.Commands {
             await ctx.RespondAsync("Shuffled! 🔄");
         }
         
-        //TODO: This would be the perfect place to make use of "Extended Description".
         [Command("seek"), Description("Seeks to a specified time in the current track.")]
         async Task Seek(CommandContext ctx, [RemainingText, Description("Which time to seek to. (Example: 1 minute is `1m`)")] TimeSpan Time) {
             if (Time > this.GuildMusic.NowPlaying.Track.Length) {
