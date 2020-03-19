@@ -138,16 +138,16 @@ namespace KekBot {
             CommandsNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
             CommandsNext.RegisterConverter(new FlagsConverter());
 
-            this.CommandsNext.RegisterCommands<TestCommand>();
-            this.CommandsNext.RegisterCommands<PickCommand>();
-            this.CommandsNext.RegisterCommands<PingCommand>();
-            this.CommandsNext.RegisterCommands<OwnerCommands>();
-            this.CommandsNext.RegisterCommands<TestCommandTwo>();
-            this.CommandsNext.RegisterCommands<HelpCommand>();
-            this.CommandsNext.RegisterCommands<FunCommands>();
-            this.CommandsNext.RegisterCommands<QuoteCommand>();
-            this.CommandsNext.RegisterCommands<MemeCommands>();
-            this.CommandsNext.RegisterCommands<MusicCommand>();
+            CommandsNext.RegisterCommands<TestCommand>();
+            CommandsNext.RegisterCommands<PickCommand>();
+            CommandsNext.RegisterCommands<PingCommand>();
+            CommandsNext.RegisterCommands<OwnerCommands>();
+            CommandsNext.RegisterCommands<TestCommandTwo>();
+            CommandsNext.RegisterCommands<HelpCommand>();
+            CommandsNext.RegisterCommands<FunCommands>();
+            CommandsNext.RegisterCommands<QuoteCommand>();
+            CommandsNext.RegisterCommands<MemeCommands>();
+            CommandsNext.RegisterCommands<MusicCommand>();
 
             if (config.WeebToken == null) {
                 Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "NOT registering weeb commands because no token was found >:(", DateTime.Now);
