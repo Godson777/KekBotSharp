@@ -18,6 +18,7 @@ using KekBot.ArgumentResolvers;
 using KekBot.Commands;
 using KekBot.Lib;
 using KekBot.Utils;
+using System.Collections.Generic;
 
 namespace KekBot {
     /// <summary>
@@ -74,11 +75,10 @@ namespace KekBot {
         public int ShardID { get; }
 
 
-        private Task _initialized = Task.CompletedTask;
         /// <summary>
-        /// Await this task in StartAsync to wait for everything in this shard to be initialized.
+        /// Await all of these tasks in StartAsync to wait for everything in this shard to be initialized.
         /// </summary>
-        private Task Initialized { get => _initialized; set => _initialized = Task.WhenAll(new[] { Initialized, value }); }
+        private readonly List<Task> ThingsToWaitFor = new List<Task>();
 
         private Timer GameTimer { get; set; } = null;
         private ConcurrentDictionary<ulong, string> PrefixSettings { get; }
@@ -152,7 +152,7 @@ namespace KekBot {
                 .Distinct();
             foreach (var module in modules) {
                 if (module is INeedsInitialized initer) {
-                    Initialized = initer.Initialize();
+                    ThingsToWaitFor.Add(initer.Initialize());
                 }
                 if (module is IHasFakeCommands faker) {
                     foreach (var name in faker.FakeCommands) {
@@ -242,7 +242,7 @@ namespace KekBot {
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "I will destroy you")]
         public async Task StartAsync() {
             Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Booting KekBot Shard.", DateTime.Now);
-            await Initialized;
+            await Task.WhenAll(ThingsToWaitFor);
             await Discord.ConnectAsync();
         }
 
