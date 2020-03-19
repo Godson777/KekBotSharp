@@ -77,7 +77,6 @@ namespace KekBot.Commands {
         private static readonly string[] FakeCommands = Array.ConvertAll(FakeCommandInfo, cmdInfo => cmdInfo.Name);
         string[] IHasFakeCommands.FakeCommands => FakeCommands;
 
-        // This gets initialized before the bot starts responding to commands
         private readonly WeebClient WeebClient;
 
         private const string EmbedFooter = "Powered by Weeb.sh!";
@@ -125,11 +124,6 @@ namespace KekBot.Commands {
                 await Base(ctx, type: cmdName, msg: cmdInfo.Msg, flags);
             }
         }
-
-        private static NsfwSearch CheckNsfw(CommandContext ctx, FlagArgs flags) =>
-            !ctx.Channel.IsNSFW
-                ? NsfwSearch.False
-                : flags.ParseEnum<NsfwSearch>("nsfw") ?? NsfwSearch.True;
 
         private async Task Base(
             CommandContext ctx,
@@ -237,22 +231,6 @@ namespace KekBot.Commands {
                     ? "couldn't fetch tags"
                     : string.Join(", ", tags.Tags.OrderBy(s => s))));
         }
-
-        //[Command("awoo"), Description("AWOOOOOOOOO"), Category(Category.Weeb)]
-        //internal async Task Awoo(CommandContext ctx) =>
-        //    await Base(ctx, type: "awoo", msg: "AWOOOOO");
-
-        //[Command("bite"), Description("Bites the living HECK out of someone."), Category(Category.Weeb)]
-        //internal async Task Bite(CommandContext ctx, [Description("@user")] DiscordMember? user = null) =>
-        //    await BaseMention(ctx, user, type: "bite", msg: "{0} was bit by {1}!");
-
-        //[Command("cry"), Description(":((((((("), Category(Category.Weeb)]
-        //internal async Task Cry(CommandContext ctx) =>
-        //    await Base(ctx, type: "cry", msg: ":CCCCCCC");
-
-        //[Command("cuddle"), Description("Cuddles a person."), Category(Category.Weeb)]
-        //internal async Task Cuddle(CommandContext ctx, [Description("@user")] DiscordMember? user = null) =>
-        //    await BaseMention(ctx, user, type: "cuddle", msg: "{1} was cuddled by {2}.");
 
         internal struct WeebCmdInfo : ICommandInfo {
             public string Name { get; }

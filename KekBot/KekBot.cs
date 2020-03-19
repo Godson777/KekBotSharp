@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -18,7 +19,6 @@ using KekBot.ArgumentResolvers;
 using KekBot.Commands;
 using KekBot.Lib;
 using KekBot.Utils;
-using System.Collections.Generic;
 
 namespace KekBot {
     /// <summary>
