@@ -12,6 +12,7 @@ using KekBot.Attributes;
 using KekBot.Lib;
 using KekBot.Menu;
 using KekBot.Utils;
+using RethinkDb.Driver.Ast;
 
 namespace KekBot.Commands {
     class HelpCommand : BaseCommandModule {
@@ -20,10 +21,12 @@ namespace KekBot.Commands {
 
         private CommandInfoList CommandInfo { get; }
         private FakeCommandsDictionary FakeCommands { get; }
+        private KekBot Bot { get; }
 
-        public HelpCommand(CommandInfoList commandInfo, FakeCommandsDictionary fakeCommands) {
+        public HelpCommand(CommandInfoList commandInfo, FakeCommandsDictionary fakeCommands, KekBot Bot) {
             CommandInfo = commandInfo;
             FakeCommands = fakeCommands;
+            this.Bot = Bot;
         }
 
         [Command("help"), Description("You're already here, aren't you?"), Category(Category.General)]
@@ -49,7 +52,7 @@ namespace KekBot.Commands {
             }
         }
 
-        private static async Task DisplayCommandHelp(CommandContext ctx, ICommandInfo cmd) {
+        private async Task DisplayCommandHelp(CommandContext ctx, ICommandInfo cmd) {
             //Setup the embed.
             var aliases = string.Join(", ", cmd.Aliases.Select(alias => $"`{alias}`"));
             var embed = new DiscordEmbedBuilder()
@@ -74,7 +77,7 @@ namespace KekBot.Commands {
                 //The following loop handles subcommands and their appropriate usage.
                 foreach (var subcmd in group.Children) {
                     if (subcmd.Overloads.Count > 1 || subcmd is CommandGroup)
-                        usage.AppendLine($"`{cmd.Name} {subcmd.Name}`: Visit `help {cmd.Name} {subcmd.Name}` for more information.");
+                        usage.AppendLine($"`{Bot.GetPrefix(ctx.Guild)}{subcmd.QualifiedName}`: Visit `help {subcmd.QualifiedName}` for more information.");
                     else
                         AppendOverload(new CommandOverloadInfo(subcmd.Overloads.Single()), subcmd);
                 }
@@ -86,7 +89,7 @@ namespace KekBot.Commands {
                 var ovrldHasArgs = args.Any();
 
                 usage.Append("`");
-                usage.Append(cmd.Name);
+                usage.Append(Bot.GetPrefix(ctx.Guild) + cmd.Cmd.QualifiedName);
                 if (subcmd != null) usage.Append($" {subcmd.Name}");
                 //Make sure we actually have arguments, otherwise don't bother adding a space for them.
                 if (ovrldHasArgs) {
@@ -127,6 +130,7 @@ namespace KekBot.Commands {
         }
 
         private IEnumerable<DiscordEmbed> GetCategoryPages(CommandContext ctx, Category cat) {
+            var prefix = Bot.GetPrefix(ctx.Guild);
             var cmds = CommandInfo
                 .Where(c => c.Category == cat)
                 .OrderBy(c => c.Name)
@@ -137,7 +141,7 @@ namespace KekBot.Commands {
                     .WithTitle(Enum.GetName(typeof(Category), cat))
                     .WithDescription(string.Join("\n", cmds
                         .GetRange(i, Math.Min(10, cmds.Count - i))
-                        .Select(c => $"{c.Name} - {c.Description}")))
+                        .Select(c => $"{prefix}{c.Name} - {c.Description}")))
                     .WithAuthor(tagline, iconUrl: ctx.Client.CurrentUser.AvatarUrl)
                     .WithFooter("KekBot v2.0")
                     .Build());

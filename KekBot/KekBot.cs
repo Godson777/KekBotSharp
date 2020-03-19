@@ -85,6 +85,7 @@ namespace KekBot {
         private Timer GameTimer { get; set; } = null;
         private ConcurrentDictionary<ulong, string> PrefixSettings { get; }
         private IServiceProvider Services { get; }
+        private string DefaultPrefix = "$";
 
         private readonly object _logLock = new object();
 
@@ -120,6 +121,7 @@ namespace KekBot {
                 .AddSingleton(new YouTubeSearchProvider())
                 .AddSingleton<MusicService>()
                 .AddSingleton(new LavalinkService(this.Discord))
+                .AddSingleton(this)
                 .BuildServiceProvider(true);
 
             CommandsNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
@@ -280,7 +282,7 @@ namespace KekBot {
 
             var pLen = PrefixSettings.TryGetValue(guildId, out string? prefix) && prefix != null
                 ? msg.GetStringPrefixLength(prefix)
-                : msg.GetStringPrefixLength("p$");
+                : msg.GetStringPrefixLength(DefaultPrefix);
 
             return Task.FromResult(pLen);
         }
@@ -335,6 +337,11 @@ namespace KekBot {
             } catch (Exception e) {
                 client.DebugLogger.LogMessage(LogLevel.Error, LOGTAG, $"Could not update presense ({e.GetType()}: {e.Message})", DateTime.Now);
             }
+        }
+
+        public string GetPrefix(DiscordGuild guild) {
+            PrefixSettings.TryGetValue(guild.Id, out var prefix); 
+            return prefix ?? DefaultPrefix;
         }
     }
 }
