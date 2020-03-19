@@ -2,7 +2,7 @@
 using System.Collections.Immutable;
 using KekBot.Attributes;
 
-namespace KekBot.Utils {
+namespace KekBot.Lib {
     internal interface ICommandInfo : IEquatable<ICommandInfo> {
         string Name { get; }
         ImmutableArray<string> Aliases { get; }

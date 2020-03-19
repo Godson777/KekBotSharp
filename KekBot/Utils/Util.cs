@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DSharpPlus;
 using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Entities;
 using DSharpPlus.Entities;
 
 namespace KekBot.Utils {
@@ -123,23 +120,11 @@ namespace KekBot.Utils {
             return content.Substring(afterCmd).Trim();
         }
 
-        // TODO: I forgot about this; remove it I guess.
-        /// <summary>
-        /// Get a command module of the given type from CNext.RegisteredCommands. Panics if it can't be found.
-        /// </summary>
-        internal static T GetModule<T>(this IReadOnlyDictionary<string, DSharpPlus.CommandsNext.Command> cmds)
-            where T : BaseCommandModule =>
-                cmds.Values.First(cmd => cmd.Module.ModuleType == typeof(T)).Module is T mod
-                    ? mod
-                    : throw Panic("couldn't get module");
-
         internal static IEnumerable<int> Range(int start = 0, int end = int.MaxValue, int step = 1) {
             for (int n = start; n < end; n += step) {
                 yield return n;
             }
         }
-
-        internal static ImmutableArray<T> ImmutableArrayFromSingle<T>(T value) => ImmutableArray.Create(new[] { value });
 
         internal static int ParseInt(string intStr, int fallback) => int.TryParse(intStr, out var n) ? n : fallback;
 

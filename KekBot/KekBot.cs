@@ -28,7 +28,7 @@ namespace KekBot {
         /// <summary>
         /// Info on all commands, "real" and "fake".
         /// </summary>
-        static readonly CommandInfoList CommandInfo = new CommandInfoList();
+        static readonly CommandInfoList CommandInfos = new CommandInfoList();
 
         /// <summary>
         /// Whether the static stuff has been initialized.
@@ -106,7 +106,7 @@ namespace KekBot {
             });
 
             Services = new ServiceCollection()
-                .AddSingleton(CommandInfo)
+                .AddSingleton(CommandInfos)
                 .AddSingleton(FakeCommands)
                 .AddSingleton(new WeebCommands.WeebCmdsCtorArgs(botName: Name, botVersion: Version, weebToken: config.WeebToken))
                 .BuildServiceProvider(true);
@@ -183,8 +183,8 @@ namespace KekBot {
                 throw new InvalidOperationException($"The {nameof(KekBot)} class is already initialized!");
             }
             IsInitializedStatic = true;
-            CommandInfo.AddRange(CommandsNext.RegisteredCommands.Values.Select(cmd => (ICommandInfo)new CommandInfo(cmd)));
-            CommandInfo.AddRange(FakeCommands.Values.Distinct().SelectMany(faker => faker.FakeCommandInfo));
+            CommandInfos.AddRange(CommandsNext.RegisteredCommands.Values.Select(CommandInfo.From));
+            CommandInfos.AddRange(FakeCommands.Values.Distinct().SelectMany(faker => faker.FakeCommandInfo));
         }
 
         private Task SocketErrored(SocketErrorEventArgs e) {

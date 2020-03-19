@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using KekBot.Utils;
 
 namespace KekBot.Lib {
     internal class CommandInfoList : List<ICommandInfo> {

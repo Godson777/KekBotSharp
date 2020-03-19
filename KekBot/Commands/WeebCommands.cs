@@ -108,9 +108,6 @@ namespace KekBot.Commands {
         }
 
         async Task IHasFakeCommands.HandleFakeCommand(CommandContext ctx, string cmdName) {
-            Util.Assert(FakeCommands.Contains(cmdName), elsePanicWith: "how did this happen");
-            Util.Assert(FakeCommandInfo.Any(cmdInfo => cmdInfo.Name == cmdName), elsePanicWith: "how did this happen");
-
             var cmdInfo = FakeCommandInfo.First(cmdInfo => cmdInfo.Name == cmdName);
             var argStr = ctx.GetRawArgString(cmdName);
             if (cmdInfo.MentionsUser) {
@@ -234,7 +231,7 @@ namespace KekBot.Commands {
 
         internal struct WeebCmdInfo : ICommandInfo {
             public string Name { get; }
-            public ImmutableArray<string> Aliases => ImmutableArray.Create(Array.Empty<string>());
+            public ImmutableArray<string> Aliases => ImmutableArray<string>.Empty;
             public string Description { get; }
             public Category Category => Category.Weeb;
             public ImmutableArray<ICommandOverloadInfo> Overloads { get; }
@@ -256,9 +253,9 @@ namespace KekBot.Commands {
                 }
                 var matches = FormatThingies.Matches(msg).AsEnumerable();
                 if (mentionsUser) {
-                    Overloads = Util.ImmutableArrayFromSingle<ICommandOverloadInfo>(
-                        new WeebOverloadMention()
-                    );
+                    Overloads = ImmutableArray.Create(new[] {
+                        (ICommandOverloadInfo)new WeebOverloadMention()
+                    });
                     foreach (var match in matches) {
                         if (!int.TryParse(match.Groups["num"].Value, out var num) ||
                             (num != 0 && num != 1)) {
@@ -267,9 +264,9 @@ namespace KekBot.Commands {
                         }
                     }
                 } else {
-                    Overloads = Util.ImmutableArrayFromSingle<ICommandOverloadInfo>(
-                        new WeebOverload()
-                    );
+                    Overloads = ImmutableArray.Create(new[] {
+                        (ICommandOverloadInfo)new WeebOverload()
+                    });
                     if (matches.Any()) {
                         throw new ArgumentException(paramName: nameof(msg),
                             message: "Msg cannot use substitutions when there are no mentions to substitute");

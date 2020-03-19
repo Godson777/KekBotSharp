@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
-using KekBot.Utils;
 
 namespace KekBot.Lib {
     interface IHasFakeCommands {
