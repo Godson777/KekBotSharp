@@ -105,6 +105,12 @@ namespace KekBot {
                 LogLevel = LogLevel.Debug
             });
 
+            Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
+            Discord.GuildAvailable += GuildAvailable;
+            Discord.Ready += Ready;
+            Discord.ClientErrored += DiscordErrored;
+            Discord.SocketErrored += SocketErrored;
+
             Services = new ServiceCollection()
                 .AddSingleton(CommandInfos)
                 .AddSingleton(FakeCommands)
@@ -139,9 +145,9 @@ namespace KekBot {
 
             // TODO: I just realized this would print for every shard. Move this somewhere else?
             if (config.WeebToken == null) {
-                Console.WriteLine("NOT registering weeb commands because no token was found >:(");
+                Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "NOT registering weeb commands because no token was found >:(", DateTime.Now);
             } else {
-                Console.WriteLine("Initializing weeb commands");
+                Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Initializing weeb commands", DateTime.Now);
                 CommandsNext.RegisterCommands<WeebCommands>();
             }
 
@@ -160,12 +166,6 @@ namespace KekBot {
                     }
                 }
             }
-
-            Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
-            Discord.GuildAvailable += GuildAvailable;
-            Discord.Ready += Ready;
-            Discord.ClientErrored += DiscordErrored;
-            Discord.SocketErrored += SocketErrored;
 
             PrefixSettings = new ConcurrentDictionary<ulong, string>();
 
