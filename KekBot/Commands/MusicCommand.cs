@@ -13,6 +13,7 @@ using RethinkDb.Driver.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -230,6 +231,26 @@ namespace KekBot.Commands {
             await ctx.RespondAsync($"Done. `{NewHost.Nickname}` is now the host.");
         }
 
-        //TODO: Seek, Rewind, Foward subcommands.
+        [Command("shuffle"), Description("Shuffles the queue. (Host Only)"), RequiresMusicHost]
+        async Task Shuffle(CommandContext ctx) {
+            this.GuildMusic.Shuffle();
+            await ctx.RespondAsync("Shuffled! 🔄");
+        }
+        
+        //TODO: This would be the perfect place to make use of "Extended Description".
+        [Command("seek"), Description("Seeks to a specified time in the current track.")]
+        async Task Seek(CommandContext ctx, [RemainingText, Description("Which time to seek to.")] TimeSpan Time) {
+            await this.GuildMusic.SeekAsync(Time, false);
+        }
+
+        [Command("forward"), Aliases("fastforward", "ff"), Description("Seeks to a specified time in the current track.")]
+        async Task Forward(CommandContext ctx, [RemainingText, Description("Which time to seek to.")] TimeSpan Time) {
+            await this.GuildMusic.SeekAsync(Time, true);
+        }
+
+        [Command("rewind"), Description("Seeks to a specified time in the current track.")]
+        async Task Rewind(CommandContext ctx, [RemainingText, Description("Which time to seek to.")] TimeSpan Time) {
+            await this.GuildMusic.SeekAsync(-Time, true);
+        }
     }
 }
