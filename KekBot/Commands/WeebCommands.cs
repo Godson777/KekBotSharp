@@ -137,12 +137,8 @@ namespace KekBot.Commands {
             var requestNsfw = ctx.Channel.IsNSFW
                 ? (nsfwFlag ?? NsfwSearch.True)
                 : NsfwSearch.False;
-            await ctx.RespondAsync($"```\nDoing a search with:\n" +
-                $"type: {type}\n" +
-                $"tags: {tags} (length {tags.Length})\n" +
-                $"hidden: {requestHidden}\n" +
-                $"nsfw: {requestNsfw}\n" +
-                $"```");
+            var debugFlag = flags.ParseBool("debug");
+            var debug = debugFlag ?? false;
 
             var builder = new DiscordEmbedBuilder();
             RandomData? image = await WeebClient.GetRandomAsync(
@@ -172,7 +168,7 @@ namespace KekBot.Commands {
                         ? $" ({extraInfo})"
                         : "");
                 });
-                builder.AddField("Tags", tagStr, inline: true);
+                if (debug) builder.AddField("Tags", tagStr, inline: true);
 
                 if (nsfwFlag != null || ctx.Channel.IsNSFW || image.Nsfw) {
                     if (!ctx.Channel.IsNSFW && image.Nsfw) {
@@ -183,11 +179,11 @@ namespace KekBot.Commands {
                     var nsfwStr = image.Nsfw
                         ? "yes"
                         : (ctx.Channel.IsNSFW ? "no" : "not allowed in SFW channels");
-                    builder.AddField("NSFW", nsfwStr, inline: true);
+                    if (debug) builder.AddField("NSFW", nsfwStr, inline: true);
                 }
 
                 if (hiddenFlag != null || image.Hidden) {
-                    builder.AddField("Hidden", image.Hidden ? "yes" : "no", inline: true);
+                    if (debug) builder.AddField("Hidden", image.Hidden ? "yes" : "no", inline: true);
                 }
             }
             builder.WithFooter(EmbedFooter);
