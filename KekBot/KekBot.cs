@@ -140,7 +140,6 @@ namespace KekBot {
             CommandsNext.RegisterConverter(new FlagsConverter());
 
             CommandsNext.RegisterCommands<TestCommand>();
-            CommandsNext.RegisterCommands<PickCommand>();
             CommandsNext.RegisterCommands<PingCommand>();
             CommandsNext.RegisterCommands<OwnerCommands>();
             CommandsNext.RegisterCommands<TestCommandTwo>();

@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using KekBot.Arguments;
 using KekBot.Attributes;
 using KekBot.Utils;
 
@@ -28,6 +30,7 @@ namespace KekBot.Commands {
         [Command("avatar"), Description("Sends a larger version of the specified user's avatar.")]
         [Aliases("ava"), Category(Category.Fun), Priority(0)]
         public async Task AvatarCommand(CommandContext ctx, [Description("The user to pull the avatar from."), Required] DiscordMember? user = null) {
+            // TODO: don't forget to finish this lol
             if (user == null) await ctx.RespondAsync("peepee");
             else await ctx.RespondAsync(user.AvatarUrl);
         }
@@ -38,6 +41,20 @@ namespace KekBot.Commands {
             await ctx.RespondAsync($"{ctx.User.Username} flipped the coin and it landed on... ***{coin}!***");
         }
 
+        [Command("pick"), Aliases("choose", "decide"), Category(Category.Fun)]
+        [Description("Has KekBot pick one of X choices for you.")]
+        public async Task PickCommand(
+            CommandContext ctx,
+            [RemainingText, Description("Options separated with vertical bars, commas, or just spaces (for single-word choices).")]
+            ChoicesList? choices = null
+        ) {
+            var choicesArray = choices?.Choices ?? Array.Empty<string>();
+            await ctx.RespondAsync(choicesArray.Length switch {
+                0 => "You haven't given me any choices, though...",
+                1 => $"Well, I guess I'm choosing `{choicesArray.Single()}`, since you haven't given me anything else to pick...",
+                _ => $"Hm... I think I'll go with `{choicesArray.RandomElement()}`.",
+            });
+        }
 
     }
 }
