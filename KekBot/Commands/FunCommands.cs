@@ -15,7 +15,8 @@ namespace KekBot.Commands {
         "As I see it, yes.", "Most likely.", "Outlook good.", "Yes.", "Signs point to yes.", "Reply hazy, try again.", "Ask again later.",
         "Better not tell you now.", "Cannot predict now.", "Concentrate and ask again.", "Don't count on it.", "My reply is no.", "My sources say no.",
         "Outlook not so good.", "Very doubtful." };
-        private static Random Random = new Random();
+
+        private readonly Randumb Rng = Randumb.Instance;
 
         [Command("8ball"), Description("Ask the magic 8-ball a question!"), Category(Category.Fun)]
         public async Task EightBallCommand(CommandContext ctx, [RemainingText, Description("The question to ask to the magic 8-ball.")] string question) {
@@ -23,7 +24,7 @@ namespace KekBot.Commands {
             if (question == null) {
                 await ctx.RespondAsync($"{emote.Think} I asked: Did {ctx.User.Username} give you a question?\n\n🎱 8-Ball's response: No, they didn't.");
             } else {
-                await ctx.RespondAsync($"{emote.Think} You asked: {question}\n\n🎱 8-Ball's response: {EightBall.RandomElement()}");
+                await ctx.RespondAsync($"{emote.Think} You asked: {question}\n\n🎱 8-Ball's response: {EightBall.RandomElement(Rng)}");
             }
         }
 
@@ -37,7 +38,7 @@ namespace KekBot.Commands {
 
         [Command("flip"), Description("Flips a coin."), Category(Category.Fun)]
         public async Task FlipCommand(CommandContext ctx) {
-            string coin = Random.Next(2) == 0 ? "HEADS" : "TAILS";
+            var coin = Rng.OneOf("HEADS", "TAILS");
             await ctx.RespondAsync($"{ctx.User.Username} flipped the coin and it landed on... ***{coin}!***");
         }
 
@@ -52,7 +53,7 @@ namespace KekBot.Commands {
             await ctx.RespondAsync(choicesArray.Length switch {
                 0 => "You haven't given me any choices, though...",
                 1 => $"Well, I guess I'm choosing `{choicesArray.Single()}`, since you haven't given me anything else to pick...",
-                _ => $"Hm... I think I'll go with `{choicesArray.RandomElement()}`.",
+                _ => $"Hm... I think I'll go with `{choicesArray.RandomElement(Rng)}`.",
             });
         }
 
