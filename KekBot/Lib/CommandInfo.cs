@@ -18,7 +18,7 @@ namespace KekBot.Lib {
 
         public CommandInfo(Command cmd) {
             Cmd = cmd;
-            Name = cmd.Name;
+            Name = cmd.QualifiedName;
             Aliases = cmd.Aliases.ToImmutableArray();
             Description = cmd.Description;
             Category = cmd.GetCategory();

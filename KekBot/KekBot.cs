@@ -21,6 +21,7 @@ using KekBot.Commands;
 using KekBot.Lib;
 using KekBot.Services;
 using KekBot.Utils;
+using System.Collections;
 
 namespace KekBot {
     /// <summary>
@@ -191,6 +192,7 @@ namespace KekBot {
             }
             IsInitializedStatic = true;
             CommandInfos.AddRange(CommandsNext.RegisteredCommands.Values.Select(CommandInfo.From));
+            CommandInfos.AddRange(CommandsNext.RegisteredCommands.Values.OfType<CommandGroup>().SelectMany(c => c.Children).Select(CommandInfo.From));
             CommandInfos.AddRange(FakeCommands.Values.Distinct().SelectMany(faker => faker.FakeCommandInfo));
         }
 
