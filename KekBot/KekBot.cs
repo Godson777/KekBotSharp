@@ -15,11 +15,12 @@ using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Lavalink;
+using KekBot.Arguments;
 using KekBot.ArgumentResolvers;
 using KekBot.Commands;
+using KekBot.Lib;
 using KekBot.Services;
 using KekBot.Utils;
-using KekBot.Lib;
 
 namespace KekBot {
     /// <summary>
@@ -135,7 +136,7 @@ namespace KekBot {
             CommandsNext.CommandErrored += HandleError;
 
             CommandsNext.RegisterConverter(new ChoicesConverter());
-            CommandsNext.RegisterUserFriendlyTypeName<PickCommand.ChoicesList>("string[]");
+            CommandsNext.RegisterUserFriendlyTypeName<ChoicesList>("string[]");
             CommandsNext.RegisterConverter(new FlagsConverter());
 
             CommandsNext.RegisterCommands<TestCommand>();

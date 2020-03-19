@@ -3,6 +3,7 @@ using DSharpPlus.CommandsNext.Attributes;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using KekBot.Arguments;
 using KekBot.Utils;
 
 namespace KekBot.Commands {
@@ -22,9 +23,5 @@ namespace KekBot.Commands {
             });
         }
 
-        internal struct ChoicesList {
-            public readonly string[] Choices;
-            public ChoicesList(string[] choices) => Choices = choices;
-        }
     }
 }

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Converters;
 using DSharpPlus.Entities;
-using static KekBot.Commands.PickCommand;
+using KekBot.Arguments;
 
 namespace KekBot.ArgumentResolvers {
     class ChoicesConverter : IArgumentConverter<ChoicesList> {
