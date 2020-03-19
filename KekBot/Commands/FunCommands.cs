@@ -29,10 +29,9 @@ namespace KekBot.Commands {
         }
 
         [Command("avatar"), Description("Sends a larger version of the specified user's avatar.")]
-        [Aliases("ava"), Category(Category.Fun), Priority(0)]
-        public async Task AvatarCommand(CommandContext ctx, [Description("The user to pull the avatar from."), Required] DiscordMember? user = null) {
-            // TODO: don't forget to finish this lol
-            if (user == null) await ctx.RespondAsync("peepee");
+        [Aliases("ava"), Category(Category.Fun)]
+        public async Task AvatarCommand(CommandContext ctx, [Description("The user to pull the avatar from. (Returns your avatar if not specified)")] DiscordMember? user = null) {
+            if (user == null) await ctx.RespondAsync(ctx.User.AvatarUrl);
             else await ctx.RespondAsync(user.AvatarUrl);
         }
 
