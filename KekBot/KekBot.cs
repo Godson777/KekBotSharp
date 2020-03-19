@@ -8,6 +8,7 @@ using DSharpPlus.Interactivity;
 using DSharpPlus.Lavalink;
 using KekBot.ArgumentResolvers;
 using KekBot.Commands;
+using KekBot.Services;
 using KekBot.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using RethinkDb.Driver;
@@ -83,7 +84,7 @@ namespace KekBot {
             });
 
             //There aren't any services for now. But I recall hutch saying he was using a ServiceCollection for something, so it's just here.
-            this.Services = new ServiceCollection().BuildServiceProvider(true);
+            this.Services = new ServiceCollection().AddSingleton<MusicService>().AddSingleton(new YouTubeSearchProvider()).AddSingleton(new LavalinkService(this.Discord)).BuildServiceProvider(true);
 
             this.CommandsNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
                 CaseSensitive = false,
@@ -109,8 +110,10 @@ namespace KekBot {
             this.CommandsNext.RegisterCommands<HelpCommand>();
             this.CommandsNext.RegisterCommands<FunCommands>();
             this.CommandsNext.RegisterCommands<QuoteCommand>();
+            this.CommandsNext.RegisterCommands<MemeCommands>();
+            this.CommandsNext.RegisterCommands<MusicCommand>();
 
-            this.Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
+            this.Discord.DebugLogger.LogMessageReceived += LogMessageReceived;
             this.Discord.GuildAvailable += GuildAvailable;
             this.Discord.Ready += Ready;
             this.Discord.ClientErrored += DiscordErrored;
@@ -133,7 +136,7 @@ namespace KekBot {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
-        private void DebugLogger_LogMessageReceived(object? sender, DebugLogMessageEventArgs e) {
+        private void LogMessageReceived(object? sender, DebugLogMessageEventArgs e) {
             lock (this._logLock) {
                 var fg = Console.ForegroundColor;
                 var bg = Console.BackgroundColor;
@@ -217,12 +220,13 @@ namespace KekBot {
 
         private async Task PrintError(CommandErrorEventArgs e) {
             if (e.Exception is CommandNotFoundException) return;
-            if (e.Exception is ArgumentException) {
+            /*if (e.Exception is ArgumentException) {
                 var cmd = this.CommandsNext.FindCommand($"help {e.Command.QualifiedName}", out var args);
                 CommandContext fakectx = this.CommandsNext.CreateFakeContext(e.Context.Member, e.Context.Channel, e.Context.Message.Content, e.Context.Prefix, cmd, args);
                 await this.CommandsNext.ExecuteCommandAsync(fakectx);
                 return;
-            }
+            }*/
+            if (e.Exception is CommandCancelledException) return;
             if (e.Exception is ChecksFailedException cfe) {
                 if (cfe.FailedChecks.OfType<RequireUserPermissionsAttribute>().Any()) {
                     var permCheck = cfe.FailedChecks.OfType<RequireUserPermissionsAttribute>().First();
