@@ -61,5 +61,20 @@ namespace KekBot.Utils {
             return s;
         }
 
+        public static void Shuffle<T>(this IList<T> list) {
+            int n = list.Count;
+            while (n > 1) {
+                n--;
+                int k = Rng.Next(n + 1);
+                T value = list[k];
+                list[k] = list[n];
+                list[n] = value;
+            }
+        }
+
+        public static String PrintTimeSpan(TimeSpan time) {
+            return $"{(time.Days > 0 ? $"{time.Days} Days, " : "")}{(time.Hours > 0 ? $"{time.Hours} Hours, " : "")}{time.Minutes} Minute{(time.Minutes > 1 ? "s" : "")}, and {time.Seconds} Second{(time.Seconds > 1 ? "s" : "")}.";
+        }
+
     }
 }
