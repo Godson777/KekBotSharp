@@ -1,22 +1,18 @@
-﻿using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Attributes;
-using DSharpPlus.Entities;
-using ImageMagick;
-using ImageMagick.Defines;
-using KekBot.Attributes;
-using Microsoft.VisualBasic;
+﻿using ImageMagick;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Entities;
+using KekBot.Attributes;
+using KekBot.Utils;
 
 namespace KekBot.Commands {
     public class MemeCommands : BaseCommandModule {
 
-        //Temporary, we'll figure out a way to make use of randoms without keeping one loaded at all times but still be memory efficient.
-        private Random Random = new Random();
+        private readonly Randumb Random = Randumb.Instance;
 
         [Command("brave"), Description("I'm a brave boy!"), Category(Category.Meme), Priority(0)]
         async Task Brave(CommandContext ctx) {

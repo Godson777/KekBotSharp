@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using KekBot.Utils;
 
 namespace KekBot {
     internal class CustomEmote {
@@ -25,7 +25,7 @@ namespace KekBot {
         private List<string> Loadings;
 
         //Trying something clever I hope
-        private Random random = new Random();
+        private readonly Randumb random = Randumb.Instance;
         public string Think { get {
                 return Thinkings[random.Next(Thinkings.Count)];
             } }
