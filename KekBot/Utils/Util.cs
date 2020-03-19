@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 
@@ -202,6 +203,21 @@ namespace KekBot.Utils {
 
         public static String PrintTimeSpan(TimeSpan time) {
             return $"{(time.Days > 0 ? $"{time.Days} Days, " : "")}{(time.Hours > 0 ? $"{time.Hours} Hours, " : "")}{time.Minutes} Minute{(time.Minutes > 1 ? "s" : "")}, and {time.Seconds} Second{(time.Seconds > 1 ? "s" : "")}.";
+        }
+
+        public static string ToDurationString(this TimeSpan ts) {
+            if (ts.TotalHours >= 1)
+                return ts.ToString(@"h\:mm\:ss");
+            return ts.ToString(@"m\:ss");
+        }
+
+        /// <summary>
+        /// Converts given <see cref="MusicItem"/> to a track string.
+        /// </summary>
+        /// <param name="mi">Music item to convert.</param>
+        /// <returns>Track string.</returns>
+        public static string ToTrackString(this MusicItem x) {
+            return $"{Formatter.InlineCode(x.Track.Title)} by {Formatter.InlineCode(x.Track.Author)} [{x.Track.Length.ToDurationString()}] (added by {x.RequestedBy.DisplayName})";
         }
 
     }

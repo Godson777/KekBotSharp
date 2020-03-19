@@ -151,10 +151,20 @@ namespace KekBot {
             lock (this.QueueInternal) {
                 if (this.RepeatMode == RepeatMode.All && this.QueueInternal.Count == 1) {
                     this.QueueInternal.Insert(0, item);
-                } else if (!this.QueueInternal.Any()) {
+                } else {
                     this.QueueInternal.Add(item);
                 }
             }
+        }
+
+        public async Task Skip(int toSkip) {
+            if (this.Player == null || !this.Player.IsConnected) return;
+
+            this.NowPlaying = default;
+            for (int i = 0; i < toSkip; i++) {
+                Dequeue();
+            }
+            await this.Player.StopAsync();
         }
 
         public MusicItem? Dequeue() {
@@ -226,9 +236,9 @@ namespace KekBot {
                 await this.Player.DisconnectAsync();
 
             this.Player = null;
-            this.CommandChannel = null;
             this.Host = null;
             await CommandChannel.SendMessageAsync("Music Session Ended (Debug Message)");
+            this.CommandChannel = null; 
         }
 
         public TimeSpan GetCurrentPosition() {

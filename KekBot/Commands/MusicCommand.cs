@@ -8,6 +8,7 @@ using KekBot.Attributes;
 using KekBot.Menu;
 using KekBot.Services;
 using KekBot.Utils;
+using RethinkDb.Driver.Ast;
 using RethinkDb.Driver.Model;
 using System;
 using System.Collections.Generic;
@@ -123,7 +124,7 @@ namespace KekBot.Commands {
 
         [Command("pause"), Description("Pauses and Unpauses the current music session. (Host Only)"), RequiresMusicHost]
         async Task Pause(CommandContext ctx) {
-            if (this.GuildMusic.IsPlaying) {
+            if (!this.GuildMusic.IsPlaying) {
                 await this.GuildMusic.ResumeAsync();
                 await ctx.RespondAsync("Music Resumed.");
             } else {
@@ -159,5 +160,76 @@ namespace KekBot.Commands {
             this.GuildMusic.SetRepeatMode(mode);
             await ctx.RespondAsync($"Repeat mode is now set to: {Enum.GetName(typeof(RepeatMode), mode)}");
         }
+
+        [Command("skip"), Description("Skips a track. (Or X tracks if specified.) (Host Only)"), RequiresMusicHost]
+        async Task Skip(CommandContext ctx, [Description("Number of tracks to skip.")] int ToSkip = 1) {
+            var skip = ToSkip - 1;
+            if (this.GuildMusic.Queue.Count < skip) {
+                await ctx.RespondAsync("There aren't enough tracks to skip!");
+                return;
+            }
+
+            if (skip > 0) {
+                await this.GuildMusic.Skip(skip);
+                await ctx.RespondAsync($"Skipped {ToSkip} tracks.");
+            } else {
+                var track = this.GuildMusic.NowPlaying; 
+                await this.GuildMusic.StopAsync();
+                await ctx.RespondAsync($"`{track.Track.Title}` by `{track.Track.Author}` has been skipped.");
+            }
+        }
+
+        [Command("remove"), Description("Removes a track from the queue. (Host Only)"), Aliases("r"), RequiresMusicHost]
+        async Task Remove(CommandContext ctx, [Description("The track # to remove.")] int ToRemove) {
+            var remove = ToRemove - 1;
+            if (this.GuildMusic.Queue.Count < remove) {
+                await ctx.RespondAsync($"There isn't a track {ToRemove}!");
+                return;
+            }
+
+            var track = this.GuildMusic.Remove(remove);
+            await ctx.RespondAsync($"Removed `{track?.Track.Title}` by `{track?.Track.Author}` from the queue.");
+        }
+
+        [Command("song"), Aliases("nowplaying", "np"), Description("Gets the current song info.")]
+        async Task Song(CommandContext ctx) {
+            var track = this.GuildMusic.NowPlaying;
+            if (track.Track.TrackString == null) return;
+            await ctx.RespondAsync($"Now playing: {Formatter.InlineCode(track.Track.Title)} by {Formatter.InlineCode(track.Track.Author)} [{this.GuildMusic.GetCurrentPosition().ToDurationString()}/{this.GuildMusic.NowPlaying.Track.Length.ToDurationString()}] requested by {Formatter.Bold(Formatter.Sanitize(this.GuildMusic.NowPlaying.RequestedBy.DisplayName))}.");
+        }
+
+        [Command("playlist"), Aliases("songs"), Description("Shows the list of tracks in the queue.")]
+        async Task Playlist(CommandContext ctx) {
+            if (this.GuildMusic.RepeatMode == RepeatMode.Single) {
+                var track = this.GuildMusic.NowPlaying;
+                await (ctx.RespondAsync($"The queue is currently set to repeat: {Formatter.InlineCode(track.Track.Title)} by {Formatter.InlineCode(track.Track.Author)}"));
+                return;
+            }
+
+            if (this.GuildMusic.Queue.Count == 0) {
+                await ctx.RespondAsync("There are no other songs in the queue.");
+                return;
+            }
+            var list = this.GuildMusic.Queue.Select(t => t.ToTrackString()).ToList();
+            var builder = new Paginator(ctx.Client.GetInteractivity()) {
+                Strings = list
+            };
+            builder.SetGenericText($"Now Playing: {this.GuildMusic.NowPlaying.ToTrackString()}{(this.GuildMusic.RepeatMode == RepeatMode.All ? " (The entire queue is repeating.)" : "")}");
+            builder.Users.Add(ctx.Member.Id);
+            builder.FinalAction = async m => {
+                await ctx.Message.DeleteAsync();
+                await m.DeleteAsync();
+            };
+            await builder.Display(ctx.Channel);
+        }
+
+        [Command("host"), Description("Makes someone else the \"Host\" of the music session."), Aliases("h"), RequiresMusicHost]
+        async Task Remove(CommandContext ctx, [Description("The person to make the new host."), RemainingText] DiscordMember NewHost) {
+            if (this.GuildMusic.Host == null) return;
+            this.GuildMusic.Host = NewHost;
+            await ctx.RespondAsync($"Done. `{NewHost.Nickname}` is now the host.");
+        }
+
+        //TODO: Seek, Rewind, Foward subcommands.
     }
 }
