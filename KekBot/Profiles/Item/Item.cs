@@ -45,11 +45,5 @@ namespace KekBot.Profiles.Item {
         /// </summary>
         /// <returns>A bool representing whether or not the equip was successful.</returns>
         public abstract bool Equip();
-
-        /*
-         * @todo Mayyyyyybe a Equip() method to equip certain items?
-         * @body The method would be abstract, but would make it easier to equip specific items (like setting a user's current token for minigames or their active background) instead of
-         * shoving it all into the `Profile` class like it was in the Java version.
-         */
     }
 }
