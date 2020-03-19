@@ -15,7 +15,7 @@ using KekBot.Lib;
 using KekBot.Utils;
 
 namespace KekBot.Commands {
-    class WeebCommands : IHasFakeCommands {
+    class WeebCommands : BaseCommandModule, IHasFakeCommands, INeedsInitialized {
 
         internal static readonly WeebCmdInfo[] FakeCommandInfo = new WeebCmdInfo[] {
             new WeebCmdInfo("awoo", "AWOOOOOOOOO",
@@ -90,9 +90,22 @@ namespace KekBot.Commands {
         /// </summary>
         internal Task Initialized;
 
-        public WeebCommands(string botName, string botVersion, string weebToken) {
-            WeebClient = new WeebClient(BotName: botName, BotVersion: botVersion);
-            Initialized = WeebClient.Authenticate(weebToken, TokenType.Wolke);
+        Task INeedsInitialized.Initialize() => Initialized;
+
+        internal class WeebCmdsCtorArgs {
+            public string BotName { get; }
+            public string BotVersion { get; }
+            public string WeebToken { get; }
+            public WeebCmdsCtorArgs(string botName, string botVersion, string weebToken) {
+                BotName = botName;
+                BotVersion = botVersion;
+                WeebToken = weebToken;
+            }
+        }
+
+        public WeebCommands(WeebCmdsCtorArgs args) {
+            WeebClient = new WeebClient(BotName: args.BotName, BotVersion: args.BotVersion);
+            Initialized = WeebClient.Authenticate(args.WeebToken, TokenType.Wolke);
         }
 
         async Task IHasFakeCommands.HandleFakeCommand(CommandContext ctx, string cmdName) {

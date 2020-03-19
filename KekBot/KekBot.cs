@@ -108,6 +108,7 @@ namespace KekBot {
             Services = new ServiceCollection()
                 .AddSingleton(CommandInfo)
                 .AddSingleton(FakeCommands)
+                .AddSingleton(new WeebCommands.WeebCmdsCtorArgs(botName: Name, botVersion: Version, weebToken: config.WeebToken))
                 .BuildServiceProvider(true);
 
             CommandsNext = Discord.UseCommandsNext(new CommandsNextConfiguration {
@@ -136,13 +137,28 @@ namespace KekBot {
             CommandsNext.RegisterCommands<FunCommands>();
             CommandsNext.RegisterCommands<QuoteCommand>();
 
+            // TODO: I just realized this would print for every shard. Move this somewhere else?
             if (config.WeebToken == null) {
                 Console.WriteLine("NOT registering weeb commands because no token was found >:(");
             } else {
                 Console.WriteLine("Initializing weeb commands");
-                var weebCmds = new WeebCommands(botName: Name, botVersion: Version, weebToken: config.WeebToken);
-                RegisterFakeCommands(weebCmds);
-                Initialized = weebCmds.Initialized;
+                CommandsNext.RegisterCommands<WeebCommands>();
+            }
+
+            var modules = CommandsNext.RegisteredCommands.Values
+                .Select(cmd => cmd.Module)
+                .OfType<DSharpPlus.CommandsNext.Entities.SingletonCommandModule>()
+                .Select(mod => mod.Instance)
+                .Distinct();
+            foreach (var module in modules) {
+                if (module is INeedsInitialized initer) {
+                    Initialized = initer.Initialize();
+                }
+                if (module is IHasFakeCommands faker) {
+                    foreach (var name in faker.FakeCommands) {
+                        FakeCommands.Add(name, faker);
+                    }
+                }
             }
 
             Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
@@ -156,12 +172,6 @@ namespace KekBot {
             Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
             Lavalink = Discord.UseLavalink();
-
-            void RegisterFakeCommands(IHasFakeCommands faker) {
-                foreach (var name in faker.FakeCommands) {
-                    FakeCommands.Add(name, faker);
-                }
-            }
         }
 
         /// <summary>
