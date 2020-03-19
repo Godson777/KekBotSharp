@@ -14,5 +14,6 @@ namespace KekBot {
         public static bool IsHidden(this CommandArgument arg) =>
             arg?.CustomAttributes.OfType<HiddenParam>().Any() ?? false;
 
+        public static string? GetExtendedDescription(this Command cmd) => cmd?.CustomAttributes.OfType<ExtendedDescriptionAttribute>().FirstOrDefault()?.ExtendedDescription;
     }
 }
