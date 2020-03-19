@@ -32,12 +32,18 @@ namespace KekBot.Menu {
         }
 
         public override async Task Display(DiscordChannel channel) {
-            //Todo: Implement permission checks
+            DisplayChecks();
             await Paginate(channel, 1);
         }
 
         public override async Task Display(DiscordMessage message) {
+            DisplayChecks();
             await Paginate(message, 1);
+        }
+
+        private protected override void DisplayChecks() {
+            if (Users.Count == 0 && Roles.Count == 0) throw new MenuFailedException();
+            if (Strings.Count == 0) throw new MenuFailedException();
         }
 
         private async Task Paginate(DiscordChannel channel, int pageNum) {

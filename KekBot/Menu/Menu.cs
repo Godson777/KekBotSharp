@@ -34,5 +34,7 @@ namespace KekBot.Menu {
                 return false;
             }
         }
+
+        private protected abstract void DisplayChecks();
     }
 }
