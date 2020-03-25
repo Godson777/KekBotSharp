@@ -17,13 +17,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00658" />
-    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00658" />
-    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00658" />
-    <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00658" />
-    <PackageReference Include="DSharpPlus.VoiceNext" Version="4.0.0-nightly-00658" />
+    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00672" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00672" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00672" />
+    <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00672" />
+    <PackageReference Include="DSharpPlus.VoiceNext" Version="4.0.0-nightly-00672" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="7.15.4" />
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.8">
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.0.0-beta3.final">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
