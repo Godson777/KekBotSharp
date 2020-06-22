@@ -22,7 +22,7 @@
     <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00672" />
     <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00672" />
     <PackageReference Include="DSharpPlus.VoiceNext" Version="4.0.0-nightly-00672" />
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="7.18.0" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="7.20.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
