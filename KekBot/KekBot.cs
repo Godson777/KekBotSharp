@@ -119,7 +119,6 @@ namespace KekBot {
                 .AddSingleton(CommandInfos)
                 .AddSingleton(FakeCommands)
                 .AddSingleton(new WeebCommands.WeebCmdsCtorArgs(botName: Name, botVersion: Version, weebToken: config.WeebToken))
-                .AddSingleton(new YouTubeSearchProvider())
                 .AddSingleton<MusicService>()
                 .AddSingleton(new LavalinkService(this.Discord))
                 .AddSingleton(this)
@@ -148,9 +147,7 @@ namespace KekBot {
             CommandsNext.RegisterCommands<TestCommandTwo>();
             CommandsNext.RegisterCommands<HelpCommand>();
             CommandsNext.RegisterCommands<FunCommands>();
-            CommandsNext.RegisterCommands<QuoteCommand>();
             CommandsNext.RegisterCommands<MemeCommands>();
-            CommandsNext.RegisterCommands<MusicCommand>();
 
             if (config.WeebToken == null) {
                 Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "NOT registering weeb commands because no token was found >:(", DateTime.Now);

@@ -220,5 +220,9 @@ namespace KekBot.Utils {
             return $"{Formatter.InlineCode(x.Track.Title)} by {Formatter.InlineCode(x.Track.Author)} [{x.Track.Length.ToDurationString()}] (added by {x.RequestedBy.DisplayName})";
         }
 
+        public static bool IsImage(this DiscordAttachment a) {
+            return a.Width > 0 && a.Height > 0;
+        }
+
     }
 }

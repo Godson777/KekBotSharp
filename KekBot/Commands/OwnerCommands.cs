@@ -18,7 +18,7 @@ namespace KekBot.Commands {
     public class OwnerCommands : BaseCommandModule {
         [Command("sudo"), Description("Forces a command to be run as someone else."), RequireOwner, Aliases("s", "sud", "sudoooooooo"), Category(Category.Fun)]
         [Priority(0)]
-        public async Task SudoCommand(CommandContext ctx, [Description("User to run the command as.")] DiscordMember member, [RemainingText, Description("The command to run (and its arguments)")] string command) {
+        async Task SudoCommand(CommandContext ctx, [Description("User to run the command as.")] DiscordMember member, [RemainingText, Description("The command to run (and its arguments)")] string command) {
             var cmd = ctx.CommandsNext.FindCommand(command, out var args);
             CommandContext fakectx = ctx.CommandsNext.CreateFakeContext(member, ctx.Channel, ctx.Message.Content, ctx.Prefix, cmd, args);
             await ctx.CommandsNext.ExecuteCommandAsync(fakectx);
@@ -36,7 +36,7 @@ namespace KekBot.Commands {
         }
 
         [Command("sudo"), Priority(-1)]
-        public async Task SudoCommand(CommandContext ctx) {
+        async Task SudoCommand(CommandContext ctx) {
             var cmd = ctx.CommandsNext.FindCommand("help sudo", out var args);
             CommandContext fakectx = ctx.CommandsNext.CreateFakeContext(ctx.Member, ctx.Channel, ctx.Message.Content, ctx.Prefix, cmd, args);
             await ctx.CommandsNext.ExecuteCommandAsync(fakectx);

@@ -1,9 +1,11 @@
 ﻿using DSharpPlus.Entities;
+using KekBot.Profiles.Item;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace KekBot.Profiles {
     public class Profile {
+        //private properties
         [JsonProperty("User ID")]
         private string UserID { get; }
         [JsonProperty("Token")]
@@ -14,6 +16,14 @@ namespace KekBot.Profiles {
         private List<string> InventoryIDs { get; }
         [JsonProperty("Badge")]
         private string BadgeID { get; }
+        [JsonProperty("Next Daily")]
+        private long daily { get; set; }
+
+        //public properties
+
+        //public Token Token { get; }
+        public Background Background { get; }
+        //public Badge Badge { get; }
         [JsonProperty]
         public double Topkeks { get; private set; }
         [JsonProperty]
@@ -30,8 +40,7 @@ namespace KekBot.Profiles {
          * @todo How do we do playlists? Should we just delete this feature entirely?
          * @body I'm thinking we just scrap it entirely, and if we readd it back it can just be in its own table or something. It's not like the feature was used all that much anyway.
          */
-        [JsonProperty("Next Daily")]
-        private long daily { get; set; }
+        
 
         private volatile DiscordUser User;
 
