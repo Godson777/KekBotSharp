@@ -157,7 +157,7 @@ namespace KekBot.Commands {
 
             [Command("edit"), Description("Edits a quote you specify."), RequireUserPermissions(DSharpPlus.Permissions.ManageMessages)]
             async Task Edit(CommandContext ctx,
-                [Description("The number of the quote you wish to edit."), Required] int QuoteNumber,
+                [Description("The number of the quote you wish to edit.")] int QuoteNumber,
                 [RemainingText, Description("The new contents of the quote.")] string Quote) {
                 var set = await Settings.Get(ctx.Guild);
                 var toGet = QuoteNumber - 1;

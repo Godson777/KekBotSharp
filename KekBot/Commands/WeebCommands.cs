@@ -70,6 +70,10 @@ namespace KekBot.Commands {
                 "{0} was ticked to death by {1}!", mentionsUser: true),
             new WeebCmdInfo("wag", "AWOOO 2: Electric Boogaloo",
                 ":3"),
+            /*
+             * @todo Move `discord` command from meme category to weeb category?
+             * @body Either way, it's just a weeb.sh command but with a different category. Dunno what to do about this one.
+             */
         };
 
         ICommandInfo[] IHasFakeCommands.FakeCommandInfo => Array.ConvertAll(FakeCommandInfo, cmdInfo => (ICommandInfo)cmdInfo);

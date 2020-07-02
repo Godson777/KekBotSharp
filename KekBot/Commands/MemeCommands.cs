@@ -10,6 +10,8 @@ using KekBot.Attributes;
 using KekBot.Utils;
 using KekBot.Arguments;
 using RethinkDb.Driver.Ast;
+using DSharpPlus.CommandsNext.Converters;
+using DSharpPlus;
 
 namespace KekBot.Commands {
     public class MemeCommands : BaseCommandModule {
@@ -721,7 +723,10 @@ namespace KekBot.Commands {
         }
 
         [Command("byemom"), Description("OK BYE MOM"), Category(Category.Meme)]
-        async Task ByeMom(CommandContext ctx, [Description("The text that'll be used in the meme.")] string Text) {
+        async Task ByeMom(CommandContext ctx, [RemainingText, Description("The text that'll be used in the meme. (Max 50 chars)")] string Text) {
+            if (Text.Length > 50) {
+                await ctx.RespondAsync("You cannot have more than 50 characters in this command.");
+            }
             await ctx.TriggerTypingAsync();
 
             using (var client = new WebClient()) {
@@ -731,7 +736,15 @@ namespace KekBot.Commands {
                 using var template = new MagickImage("Resource/Files/memegen/byemom_template.png");
                 using var bg = new MagickImage(MagickColors.White, 128, 128);
 
-                using var text = new MagickImage(MagickColors.Transparent,   b)
+                var textSettings = new MagickReadSettings() {
+                    Font = "Ariel",
+                    TextGravity = Gravity.West,
+                    BackgroundColor = MagickColors.Transparent,
+                    Width = 388,
+                    Height = 28
+                };
+                using var text = new MagickImage($"caption:{Text}", textSettings);
+                text.Rotate(-25);
 
                 ava.Resize(80, 80);
                 clone.Resize(128, 128);
@@ -740,7 +753,69 @@ namespace KekBot.Commands {
                 bg.Resize(80, 80);
                 template.Composite(bg, 523, 12, CompositeOperator.SrcOver);
                 template.Composite(ava, 523, 12, CompositeOperator.SrcOver);
+                template.Composite(text, 345, 426, CompositeOperator.SrcOver);
+                using var output = new MemoryStream(template.ToByteArray());
 
+                await ctx.RespondWithFileAsync("byemom.png", output);
+            }
+        }
+
+        [Command("delet"), Description("Delet a user from existance."), Category(Category.Meme)]
+        async Task Delet(CommandContext ctx, [Required, RemainingText, Description("The user to generate the image from. (If none given, it uses you.)")] String Member) {
+            await ctx.TriggerTypingAsync();
+
+            if (!String.IsNullOrWhiteSpace(Member) && Member.Equals("this")) {
+                // TODO: gonna need hutch to help port the "delet this" easter egg (which used weeb.sh to make that happen) 
+                return;
+            }
+
+            var target = await Util.ConvertArgAsync<DiscordMember>(Member, ctx);
+
+            var m = target ?? ctx.Member;
+
+            using (var client = new WebClient()) {
+                using var _ = await client.OpenReadTaskAsync(m.AvatarUrl);
+                using var ava = new MagickImage(_);
+                using var template = new MagickImage("Resource/Files/memegen/DELET_template.png");
+
+                ava.Resize(42, 42);
+                template.Composite(ava, 36, 114, CompositeOperator.DstOver);
+
+                var textSettings = new MagickReadSettings() {
+                    Font = "Whitney-Book",
+                    FontPointsize = 16,
+                    TextGravity = Gravity.Northwest,
+                    FillColor = new MagickColor(m.Color.ToString()), 
+                    BackgroundColor = MagickColors.Transparent,
+                    Width = 279,
+                    Height = 25
+                };
+
+                using var text = new MagickImage($"caption:{m.DisplayName}", textSettings);
+
+                template.Composite(text, 93, 113, CompositeOperator.SrcOver);
+
+                //Pull random quote from text file for delet command.
+                try {
+                    var quotes = await File.ReadAllLinesAsync("Resource/Files/memegen/delet_quotes.txt");
+                    var quote = quotes.RandomElement();
+
+                    textSettings.FillColor = MagickColors.White;
+                    textSettings.Width = 315;
+                    textSettings.Height = 25;
+                    textSettings.TextGravity = Gravity.Forget;
+
+                    using var drawnQuote = new MagickImage($"caption:{quote}", textSettings);
+
+                    template.Composite(drawnQuote, 93, 133, CompositeOperator.SrcOver);
+                    GC.Collect();
+                } catch (Exception e) {
+                    ctx.Client.DebugLogger.LogMessage(LogLevel.Error, KekBot.LOGTAG, "Could not generate a quote for the delet command. Field was left blank.", DateTime.Now);
+                }
+
+                using var output = new MemoryStream(template.ToByteArray());
+
+                await ctx.RespondWithFileAsync("delet.png", output);
             }
         }
 
