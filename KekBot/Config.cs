@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -16,6 +17,8 @@ namespace KekBot {
         public string DbPass { get; private set; }
         [JsonProperty("shards")]
         public int Shards { get; private set; } = 1;
+        [JsonProperty("rankedUsers")]
+        public Dictionary<ulong, Rank> RankedUsers = new Dictionary<ulong, Rank>();
 
         [JsonProperty("weebToken")]
         public string WeebToken { get; private set; }
@@ -29,5 +32,11 @@ namespace KekBot {
                 return _instance = JsonConvert.DeserializeObject<Config>(await sr.ReadToEndAsync());
             } else return _instance;
         }
+
+        public async void Save() {
+            await File.WriteAllTextAsync("Resource/Config/config.json", JsonConvert.SerializeObject(this, Formatting.Indented), Encoding.UTF8);
+        }
     }
+
+    public enum Rank { None, Memer, Mod, Admin }
 }

@@ -1,22 +1,15 @@
 ﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using ImageMagick;
 using KekBot.Attributes;
+using RethinkDb.Driver.Ast;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
-using CategoryAttribute = KekBot.Attributes.CategoryAttribute;
-using DescriptionAttribute = DSharpPlus.CommandsNext.Attributes.DescriptionAttribute;
 
 namespace KekBot.Commands {
     public class OwnerCommands : BaseCommandModule {
-        [Command("sudo"), Description("Forces a command to be run as someone else."), RequireOwner, Aliases("s", "sud", "sudoooooooo"), Category(Category.Fun)]
+        [Command("sudo"), Description("Forces a command to be run as someone else."), RequireOwner, Aliases("s", "sud", "sudoooooooo")]
         [Priority(0)]
         async Task SudoCommand(CommandContext ctx, [Description("User to run the command as.")] DiscordMember member, [RemainingText, Description("The command to run (and its arguments)")] string command) {
             var cmd = ctx.CommandsNext.FindCommand(command, out var args);
@@ -42,7 +35,35 @@ namespace KekBot.Commands {
             await ctx.CommandsNext.ExecuteCommandAsync(fakectx);
         }
 
+        [Command("rank"), Description("Gives a specified user a rank for moderating/editing KekBot."), RequireOwner]
+        async Task GiveRank(CommandContext ctx, [Description("The rank to assign to a specified user.")] String ToGive, [RemainingText, Description("The user that will be assigned the rank.")] DiscordUser User) {
+            Config config = await Config.Get();
+            if (!Enum.TryParse<Rank>(ToGive, true, out var r)) {
+                await ctx.RespondAsync("Invalid Rank.");
+                return;
+            }
 
-
+            if (config.RankedUsers.ContainsKey(User.Id)) {
+                if (config.RankedUsers[User.Id] == r) await ctx.RespondAsync("The specified user already has this rank.");
+                else if (r == Rank.None) {
+                    config.RankedUsers.Remove(User.Id);
+                    config.Save();
+                    await ctx.RespondAsync($"Rank removed from {User.Username}#{User.Discriminator}.");
+                }
+                else {
+                    config.RankedUsers[User.Id] = r;
+                    config.Save();
+                    await ctx.RespondAsync($"{User.Username}#{User.Discriminator} has been assigned the rank: `{Enum.GetName(typeof(Rank), r)}`");
+                }
+            } else {
+                if (r == Rank.None) {
+                    await ctx.RespondAsync("This user already does not have a rank.");
+                    return;
+                }
+                config.RankedUsers.Add(User.Id, r);
+                config.Save();
+                await ctx.RespondAsync($"{User.Username}#{User.Discriminator} has been assigned the rank: `{Enum.GetName(typeof(Rank), r)}`");
+            }
+        }
     }
 }
