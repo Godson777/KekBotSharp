@@ -743,7 +743,7 @@ namespace KekBot.Commands {
                     Width = 388,
                     Height = 28
                 };
-                using var text = new MagickImage($"caption:{Text}", textSettings);
+                using var text = new MagickImage($"caption:{Text.Replace("\\", "\\\\")}", textSettings);
                 text.Rotate(-25);
 
                 ava.Resize(80, 80);
@@ -816,6 +816,74 @@ namespace KekBot.Commands {
                 using var output = new MemoryStream(template.ToByteArray());
 
                 await ctx.RespondWithFileAsync("delet.png", output);
+            }
+        }
+
+        [Command("doggo"), Description("Doggo displays your text/image on his board!"), Category(Category.Meme), Priority(1)]
+        async Task Doggo(CommandContext ctx, [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
+            Uri? Image = null) {
+            await ctx.TriggerTypingAsync();
+
+            Uri? uri = Image;
+            //Checks if "Image" was null.
+            if (uri == null) {
+                if (ctx.Message.Attachments.Count > 0) {
+                    uri = new Uri(ctx.Message.Attachments[0].Url);
+                } else {
+                    uri = await HuntForImage(ctx);
+                }
+            }
+            //Checks if the search failed.
+            if (uri == null) {
+                await ctx.RespondAsync("No image found.");
+                return;
+            }
+
+            using (var client = new WebClient()) {
+                using var _ = await client.OpenReadTaskAsync(uri);
+                using var image = new MagickImage(_);
+                using var template = new MagickImage("Resource/Files/memegen/doggo.jpg");
+
+                var widthRatio = 376d / image.Width;
+                var heightRatio = 299d / image.Height;
+                var ratio = Math.Min(widthRatio, heightRatio);
+
+                var width = (int)(image.Width * ratio);
+                var height = (int)(image.Height * ratio);
+
+                var x = (376 / 2) - (width / 2);
+                var y = (299 / 2) - (height / 2);
+
+                image.Resize(width, height);
+                template.Composite(image, 135 + x, 57 + y, CompositeOperator.SrcOver);
+                using var output = new MemoryStream(template.ToByteArray());
+
+                await ctx.RespondWithFileAsync("doggo.png", output);
+            }
+        }
+
+        [Command("doggo"), Priority(0)]
+        async Task Doggo(CommandContext ctx, [Description("The text that'll be used in the meme."), RemainingText] string Text) {
+            await ctx.TriggerTypingAsync();
+
+            using (var client = new WebClient()) {
+                using var template = new MagickImage("Resource/Files/memegen/doggo.jpg");
+
+                var textSettings = new MagickReadSettings() {
+                    Font = "Calibri-Bold",
+                    TextGravity = Gravity.Center,
+                    FillColor = MagickColors.Black,
+                    BackgroundColor = MagickColors.Transparent,
+                    Width = 376,
+                    Height = 299
+                };
+
+                using var text = new MagickImage($"caption:{Text.Replace("\\", "\\\\")}", textSettings);
+
+                template.Composite(text, 135, 57, CompositeOperator.SrcOver);
+                using var output = new MemoryStream(template.ToByteArray());
+
+                await ctx.RespondWithFileAsync("doggo.png", output);
             }
         }
 
