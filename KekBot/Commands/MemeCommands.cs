@@ -12,6 +12,7 @@ using KekBot.Arguments;
 using RethinkDb.Driver.Ast;
 using DSharpPlus.CommandsNext.Converters;
 using DSharpPlus;
+using System.Text;
 
 namespace KekBot.Commands {
     public class MemeCommands : BaseCommandModule {
@@ -41,26 +42,15 @@ namespace KekBot.Commands {
                 return;
             }
 
-
-
             using (var client = new WebClient()) {
                 using var template = new MagickImage("Resource/Files/memegen/brave.jpg");
                 using var _ = await client.OpenReadTaskAsync(uri);
                 using var image = new MagickImage(_);
 
-                var widthRatio = 892d / image.Width;
-                var heightRatio = 1108d / image.Height;
-                var ratio = Math.Min(widthRatio, heightRatio);
-
-                var width = (int)(image.Width * ratio);
-                var height = (int)(image.Height * ratio);
-
-                var x = (892 / 2) - (width / 2);
-                var y = (1108 / 2) - (height / 2);
-
-                image.Resize(width, height);
-                template.Composite(image, x, 1112 + y, CompositeOperator.SrcOver);
-
+                image.Resize(892, 1108);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(892, 1108, Gravity.Center);
+                template.Composite(image, 0, 1112, CompositeOperator.SrcOver);
 
                 using var output = new MemoryStream(template.ToByteArray());
                 await ctx.RespondWithFileAsync("test.png", output);
@@ -134,7 +124,6 @@ namespace KekBot.Commands {
                 ava.Resize(270, 270);
                 template.Composite(ava, 368, 375, CompositeOperator.SrcOver);
 
-
                 using var output = new MemoryStream(template.ToByteArray());
 
                 await ctx.RespondWithFileAsync("erase.png", output);
@@ -167,19 +156,10 @@ namespace KekBot.Commands {
                 using var image = new MagickImage(_);
                 using var template = new MagickImage("Resource/Files/memegen/garage.png");
 
-                var widthRatio = 640d / image.Width;
-                var heightRatio = 297d / image.Height;
-                var ratio = Math.Min(widthRatio, heightRatio);
-
-                var width = (int)(image.Width * ratio);
-                var height = (int)(image.Height * ratio);
-
-                var x = (640 / 2) - (width / 2);
-                var y = (297 / 2) - (height / 2);
-
-                image.Resize(width, height);
-                template.Composite(image, x, 282 + y, CompositeOperator.DstOver);
-
+                image.Resize(640, 297);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(640, 297, Gravity.Center);
+                template.Composite(image, 0, 282, CompositeOperator.DstOver);
 
                 using var output = new MemoryStream(template.ToByteArray());
 
@@ -245,19 +225,10 @@ namespace KekBot.Commands {
                 using var image = new MagickImage(_);
                 using var template = new MagickImage("Resource/Files/memegen/door.png");
 
-                var widthRatio = 338d / image.Width;
-                var heightRatio = 466d / image.Height;
-                var ratio = Math.Min(widthRatio, heightRatio);
-
-                var width = (int)(image.Width * ratio);
-                var height = (int)(image.Height * ratio);
-
-                var x = (338 / 2) - (width / 2);
-                var y = (466 / 2) - (height / 2);
-
-                image.Resize(width, height);
-                template.Composite(image, 326 + x, 7 + y, CompositeOperator.DstOver);
-
+                image.Resize(338, 466);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(338, 466, Gravity.Center);
+                template.Composite(image, 326, 7, CompositeOperator.DstOver);
 
                 using var output = new MemoryStream(template.ToByteArray());
 
@@ -382,30 +353,20 @@ namespace KekBot.Commands {
                 using var image = new MagickImage(_);
                 using var template = new MagickImage("Resource/Files/memegen/lick.png");
 
-
-                var widthRatio = 309d / image.Width;
-                var heightRatio = 225d / image.Height;
-                var ratio = Math.Min(widthRatio, heightRatio);
-
-                var width = (int)(image.Width * ratio);
-                var height = (int)(image.Height * ratio);
-
-                var x = (309 / 2) - (width / 2);
-                var y = (225 / 2) - (height / 2);
-
-                image.Resize(width, height);
+                image.Resize(309, 225);
                 image.BackgroundColor = MagickColors.White;
                 image.VirtualPixelMethod = VirtualPixelMethod.Background;
+                image.Extent(309, 225, Gravity.Center);
                 var settings = new DistortSettings() {
                     Viewport = new MagickGeometry(template.Width, template.Height)
                 };
                 //Distort the image to match the perspective of the template.
                 //Pattern: (Src TL X, Src TL Y, Dest TL X, Dest TL Y, Src TR X, Src TR Y, Dest TR X, Dest TR Y, Src BR X, Src BR Y, Dest BR X, Dest BR Y, Src BL X, Src BL Y, Dest BR X, Dest BR Y)
-                image.Distort(DistortMethod.Perspective, settings, 0, 0, 291 + x, 0 + y, image.Width, 0, 599 - x, 0 + y, image.Width, image.Height, 599 - x, 253 - y, 0, image.Height, 291 + x, 224 - y);
+                image.Distort(DistortMethod.Perspective, settings, 0, 0, 291, 0, image.Width, 0, 599, 0, image.Width, image.Height, 599, 253, 0, image.Height, 291, 224);
                 template.Composite(image, CompositeOperator.DstOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("magik.png", output);
+                await ctx.RespondWithFileAsync("poster.png", output);
             }
         }
 
@@ -487,21 +448,11 @@ namespace KekBot.Commands {
                 using var _ = await client.OpenReadTaskAsync(uri);
                 using var image = new MagickImage(_);
                 using var template = new MagickImage("Resource/Files/memegen/wehavetechnology.png");
-                using var bg = new MagickImage(MagickColors.White, 335, 286);
 
-
-                var widthRatio = 335d / image.Width;
-                var heightRatio = 286d / image.Height;
-                var ratio = Math.Min(widthRatio, heightRatio);
-
-                var width = (int)(image.Width * ratio);
-                var height = (int)(image.Height * ratio);
-
-                var x = (335 / 2) - (width / 2);
-                var y = (286 / 2) - (height / 2);
-
-                image.Resize(width, height);
-                template.Composite(image, 37 + x, 555 + y, CompositeOperator.DstOver);
+                image.Resize(335, 286);
+                image.BackgroundColor = MagickColors.White;
+                image.Extent(335, 286, Gravity.Center);
+                template.Composite(image, 37, 555, CompositeOperator.DstOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
                 await ctx.RespondWithFileAsync("T E C H N O L O G Y.png", output);
@@ -533,8 +484,6 @@ namespace KekBot.Commands {
                 using var _ = await client.OpenReadTaskAsync(uri);
                 using var image = new MagickImage(_);
                 using var template = new MagickImage("Resource/Files/memegen/torture.png");
-                using var bg = new MagickImage(MagickColors.Black, 199, 191);
-
 
                 var widthRatio = 199d / image.Width;
                 var heightRatio = 191d / image.Height;
@@ -546,9 +495,10 @@ namespace KekBot.Commands {
                 var x = (199 / 2) - (width / 2);
                 var y = (191 / 2) - (height / 2);
 
-                image.Resize(width, height);
-                template.Composite(image, 248 + x, 159 + y, CompositeOperator.DstOver);
-                template.Composite(bg, 248, 159, CompositeOperator.DstOver);
+                image.Resize(199, 191);
+                image.BackgroundColor = MagickColors.Black;
+                image.Extent(199, 191, Gravity.Center);
+                template.Composite(image, 248, 159, CompositeOperator.DstOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
                 await ctx.RespondWithFileAsync("torture.png", output);
@@ -586,18 +536,10 @@ namespace KekBot.Commands {
                 image.Trim();
                 image.Shave(1, 1);
 
-                var widthRatio = 144d / image.Width;
-                var heightRatio = 176d / image.Height;
-                var ratio = Math.Min(widthRatio, heightRatio);
-
-                var width = (int)(image.Width * ratio);
-                var height = (int)(image.Height * ratio);
-
-                var x = (144 / 2) - (width / 2);
-                var y = (176 / 2) - (height / 2);
-
-                image.Resize(width, height);
-                template.Composite(image, 103 + x, 175 + y, CompositeOperator.DstOver);
+                image.Resize(144, 176);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(144, 176, Gravity.Center);
+                template.Composite(image, 103, 175, CompositeOperator.DstOver);
                 template.Composite(bg, 106, 177, CompositeOperator.DstOver);
 
                 using var output = new MemoryStream(template.ToByteArray());
@@ -633,18 +575,10 @@ namespace KekBot.Commands {
                 using var template = new MagickImage("Resource/Files/memegen/urgent.png");
                 using var bg = new MagickImage(MagickColors.Black, 552, 465);
 
-                var widthRatio = 552d / image.Width;
-                var heightRatio = 465d / image.Height;
-                var ratio = Math.Min(widthRatio, heightRatio);
-
-                var width = (int)(image.Width * ratio);
-                var height = (int)(image.Height * ratio);
-
-                var x = (552 / 2) - (width / 2);
-                var y = (465 / 2) - (height / 2);
-
-                image.Resize(width, height);
-                template.Composite(image, 22 + x, 11 + y, CompositeOperator.DstOver);
+                image.Resize(552, 465);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(552, 465, Gravity.Center);
+                template.Composite(image, 22, 11, CompositeOperator.DstOver);
                 template.Composite(bg, 22, 11, CompositeOperator.DstOver);
 
                 using var output = new MemoryStream(template.ToByteArray());
@@ -680,40 +614,22 @@ namespace KekBot.Commands {
                 using var clone = image.Clone();
                 using var template = new MagickImage("Resource/Files/memegen/trash.png");
 
-                var widthRatio = 382d / image.Width;
-                var heightRatio = 262d / image.Height;
-                var ratio = Math.Min(widthRatio, heightRatio);
-
-                var width = (int)(image.Width * ratio);
-                var height = (int)(image.Height * ratio);
-
-                var x = (382 / 2) - (width / 2);
-                var y = (262 / 2) - (height / 2);
-
-                image.Resize(width, height);
+                image.Resize(382, 262);
                 image.BackgroundColor = MagickColors.White;
                 image.VirtualPixelMethod = VirtualPixelMethod.Background;
+                image.Extent(382, 262, Gravity.Center);
                 var settings = new DistortSettings() {
                     Viewport = new MagickGeometry(template.Width, template.Height)
                 };
                 //Distort the image to match the perspective of the template.
                 //Pattern: (Src TL X, Src TL Y, Dest TL X, Dest TL Y, Src TR X, Src TR Y, Dest TR X, Dest TR Y, Src BR X, Src BR Y, Dest BR X, Dest BR Y, Src BL X, Src BL Y, Dest BR X, Dest BR Y)
-                image.Distort(DistortMethod.Perspective, settings, 0, 0, 620 + x, 102 + y, image.Width, 0, 983 - x, 200 + y, image.Width, image.Height, 917 - x, 446 - y, 0, image.Height, 551 + x, 334 - y);
+                image.Distort(DistortMethod.Perspective, settings, 0, 0, 620, 102, image.Width, 0, 983, 200, image.Width, image.Height, 917, 446, 0, image.Height, 551, 334);
 
-                widthRatio = 123d / clone.Width;
-                heightRatio = 86d / clone.Height;
-                ratio = Math.Min(widthRatio, heightRatio);
-
-                width = (int)(clone.Width * ratio);
-                height = (int)(clone.Height * ratio);
-
-                x = (123 / 2) - (width / 2);
-                y = (86 / 2) - (height / 2);
-
-                clone.Resize(width, height);
+                clone.Resize(123, 86);
                 clone.BackgroundColor = MagickColors.Transparent;
                 clone.VirtualPixelMethod = VirtualPixelMethod.Background;
-                clone.Distort(DistortMethod.Perspective, settings, 0, 0, 353 + x, 317 + y, clone.Width, 0, 473 - x, 322 + y, clone.Width, clone.Height, 468 - x, 404 - y, 0, clone.Height, 349 + x, 397 - y);
+                clone.Extent(123, 86, Gravity.Center);
+                clone.Distort(DistortMethod.Perspective, settings, 0, 0, 353, 317, clone.Width, 0, 473, 322, clone.Width, clone.Height, 468, 404, 0, clone.Height, 349, 397);
                 image.Composite(clone, CompositeOperator.SrcOver);
                 template.Composite(image, CompositeOperator.DstOver);
                 using var output = new MemoryStream(template.ToByteArray());
@@ -769,7 +685,8 @@ namespace KekBot.Commands {
                 return;
             }
 
-            var target = await Util.ConvertArgAsync<DiscordMember>(Member, ctx);
+            //If we don't include `?? ""`, an error will be thrown in console if no input is given.
+            var target = await Util.ConvertArgAsync<DiscordMember>(Member ?? "", ctx);
 
             var m = target ?? ctx.Member;
 
@@ -785,7 +702,7 @@ namespace KekBot.Commands {
                     Font = "Whitney-Book",
                     FontPointsize = 16,
                     TextGravity = Gravity.Northwest,
-                    FillColor = new MagickColor(m.Color.ToString()), 
+                    FillColor = new MagickColor(m.Color.ToString()),
                     BackgroundColor = MagickColors.Transparent,
                     Width = 279,
                     Height = 25
@@ -844,18 +761,10 @@ namespace KekBot.Commands {
                 using var image = new MagickImage(_);
                 using var template = new MagickImage("Resource/Files/memegen/doggo.jpg");
 
-                var widthRatio = 376d / image.Width;
-                var heightRatio = 299d / image.Height;
-                var ratio = Math.Min(widthRatio, heightRatio);
-
-                var width = (int)(image.Width * ratio);
-                var height = (int)(image.Height * ratio);
-
-                var x = (376 / 2) - (width / 2);
-                var y = (299 / 2) - (height / 2);
-
-                image.Resize(width, height);
-                template.Composite(image, 135 + x, 57 + y, CompositeOperator.SrcOver);
+                image.Resize(376, 299);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(376, 299, Gravity.Center);
+                template.Composite(image, 135, 57, CompositeOperator.SrcOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
                 await ctx.RespondWithFileAsync("doggo.png", output);
@@ -878,12 +787,79 @@ namespace KekBot.Commands {
                     Height = 299
                 };
 
-                using var text = new MagickImage($"caption:{Text.Replace("\\", "\\\\")}", textSettings);
+                using var text = new MagickImage($"caption:{PrepText(Text).Replace("\\", "\\\\")}", textSettings);
 
                 template.Composite(text, 135, 57, CompositeOperator.SrcOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
                 await ctx.RespondWithFileAsync("doggo.png", output);
+            }
+        }
+
+        [Command("kaede"), Description("Kaede holds up a sign, whatever the sign contains is up to you."), Category(Category.Meme), Priority(1)]
+        async Task Kaede(CommandContext ctx, [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
+            Uri? Image = null, [HiddenParam, RemainingText] FlagArgs flags = new FlagArgs()) {
+            await ctx.TriggerTypingAsync();
+
+            Uri? uri = Image;
+            //Checks if "Image" was null.
+            if (uri == null) {
+                if (ctx.Message.Attachments.Count > 0) {
+                    uri = new Uri(ctx.Message.Attachments[0].Url);
+                } else {
+                    uri = await HuntForImage(ctx);
+                }
+            }
+            //Checks if the search failed.
+            if (uri == null) {
+                await ctx.RespondAsync("No image found.");
+                return;
+            }
+
+            var reboot = flags.ParseBool("reboot") ?? false;
+
+            using (var client = new WebClient()) {
+                using var _ = await client.OpenReadTaskAsync(uri);
+                using var image = new MagickImage(_);
+                using var template = new MagickImage($"Resource/Files/memegen/kaededab{(reboot ? "-reboot" : "")}.jpg");
+
+                image.Resize(610, 379);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(610, 379, Gravity.Center);
+                image.Rotate(-6.92);
+                template.Composite(image, 144, 628, CompositeOperator.SrcOver);
+                using var output = new MemoryStream(template.ToByteArray());
+
+                await ctx.RespondWithFileAsync("kaededab.png", output);
+            }
+        }
+
+        [Command("kaede"), Priority(0)]
+        async Task Kaede(CommandContext ctx, [Description("The text that'll be used in the meme."), RemainingText] string Text) {
+            await ctx.TriggerTypingAsync();
+
+            var flags = FlagArgs.ParseString(Text, out var stripped) ?? new FlagArgs();
+
+            var reboot = flags.ParseBool("reboot") ?? false;
+
+            using (var client = new WebClient()) {
+                using var template = new MagickImage($"Resource/Files/memegen/kaededab{(reboot ? "-reboot" : "")}.jpg");
+
+                var textSettings = new MagickReadSettings() {
+                    Font = "Calibri-Bold",
+                    TextGravity = Gravity.Center,
+                    FillColor = MagickColors.Black,
+                    BackgroundColor = MagickColors.Transparent,
+                    Width = 610,
+                    Height = 379
+                };
+
+                using var text = new MagickImage($"caption:{PrepText(stripped).Replace("\\", "\\\\")}", textSettings);
+                text.Rotate(-6.92);
+                template.Composite(text, 144, 628, CompositeOperator.SrcOver);
+                using var output = new MemoryStream(template.ToByteArray());
+
+                await ctx.RespondWithFileAsync("kaededab.png", output);
             }
         }
 
@@ -914,6 +890,18 @@ namespace KekBot.Commands {
                 }
             }
             return null;
+        }
+
+        private string PrepText(string text) {
+            var charLimit = 12;
+            var sb = new StringBuilder();
+            var split = text.Split(" ");
+            for (var i = 0; i < split.Length; i++) {
+                if (split[i].Length > charLimit) {
+                    for (var ii = 0; ii < split[i].Length; ii += charLimit) sb.Append(split[i].Substring(ii, Math.Min(charLimit, split[i].Length - ii)) + " ");
+                } else sb.Append(text + " ");
+            }
+            return sb.ToString();
         }
 
         /* UNUSED CODE FOR DRAWING ONTO A BLANK CANVAS
