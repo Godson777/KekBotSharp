@@ -9,8 +9,6 @@ using DSharpPlus.Entities;
 using KekBot.Attributes;
 using KekBot.Utils;
 using KekBot.Arguments;
-using RethinkDb.Driver.Ast;
-using DSharpPlus.CommandsNext.Converters;
 using DSharpPlus;
 using System.Text;
 
@@ -174,6 +172,33 @@ namespace KekBot.Commands {
             var reboot = args.ParseBool("reboot") ?? false;
 
             await ctx.RespondWithFileAsync($"Resource/Files/memegen/topless_grill{(reboot ? "-reboot" : "")}.png");
+        }
+
+        [Command("poosy"), Description("\"Poosy...De...stroyer.\" ~Vinesauce Joel"), Category(Category.Meme)]
+        async Task Poosy(CommandContext ctx, [HiddenParam, RemainingText] FlagArgs args) {
+            await ctx.TriggerTypingAsync();
+
+            var reboot = args.ParseBool("reboot") ?? false;
+
+            await ctx.RespondWithFileAsync($"Resource/Files/memegen/poosy{(reboot ? "-reboot" : "")}.png");
+        }
+
+        [Command("justright"), Description("When you need Discord to be just right..."), Category(Category.Meme)]
+        async Task JustRight(CommandContext ctx) {
+            await ctx.TriggerTypingAsync();
+            await ctx.RespondWithFileAsync(Directory.GetFiles("Resource/Files/justright").RandomElement());
+        }
+
+        [Command("kirb"), Aliases("poyo"), Description("POYO"), Category(Category.Meme)]
+        async Task Kirb(CommandContext ctx) {
+            await ctx.TriggerTypingAsync();
+            await ctx.RespondWithFileAsync(Directory.GetFiles("Resource/Files/kirb").RandomElement());
+        }
+
+        [Command("youtried"), Description("You tried. Here's a gold star!"), Category(Category.Meme)]
+        async Task YouTried(CommandContext ctx) {
+            await ctx.TriggerTypingAsync();
+            await ctx.RespondWithFileAsync(Directory.GetFiles("Resource/Files/youtried").RandomElement());
         }
 
         [Command("johnny"), Description("HEREEEE'S JOHNNY!"), Category(Category.Meme)]
@@ -775,25 +800,23 @@ namespace KekBot.Commands {
         async Task Doggo(CommandContext ctx, [Description("The text that'll be used in the meme."), RemainingText] string Text) {
             await ctx.TriggerTypingAsync();
 
-            using (var client = new WebClient()) {
-                using var template = new MagickImage("Resource/Files/memegen/doggo.jpg");
+            using var template = new MagickImage("Resource/Files/memegen/doggo.jpg");
 
-                var textSettings = new MagickReadSettings() {
-                    Font = "Calibri-Bold",
-                    TextGravity = Gravity.Center,
-                    FillColor = MagickColors.Black,
-                    BackgroundColor = MagickColors.Transparent,
-                    Width = 376,
-                    Height = 299
-                };
+            var textSettings = new MagickReadSettings() {
+                Font = "Calibri-Bold",
+                TextGravity = Gravity.Center,
+                FillColor = MagickColors.Black,
+                BackgroundColor = MagickColors.Transparent,
+                Width = 376,
+                Height = 299
+            };
 
-                using var text = new MagickImage($"caption:{PrepText(Text).Replace("\\", "\\\\")}", textSettings);
+            using var text = new MagickImage($"caption:{PrepText(Text).Replace("\\", "\\\\")}", textSettings);
 
-                template.Composite(text, 135, 57, CompositeOperator.SrcOver);
-                using var output = new MemoryStream(template.ToByteArray());
+            template.Composite(text, 135, 57, CompositeOperator.SrcOver);
+            using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("doggo.png", output);
-            }
+            await ctx.RespondWithFileAsync("doggo.png", output);
         }
 
         [Command("kaede"), Description("Kaede holds up a sign, whatever the sign contains is up to you."), Category(Category.Meme), Priority(1)]
@@ -842,24 +865,165 @@ namespace KekBot.Commands {
 
             var reboot = flags.ParseBool("reboot") ?? false;
 
-            using (var client = new WebClient()) {
-                using var template = new MagickImage($"Resource/Files/memegen/kaededab{(reboot ? "-reboot" : "")}.jpg");
 
+            using var template = new MagickImage($"Resource/Files/memegen/kaededab{(reboot ? "-reboot" : "")}.jpg");
+
+            var textSettings = new MagickReadSettings() {
+                Font = "Calibri-Bold",
+                TextGravity = Gravity.Center,
+                FillColor = MagickColors.Black,
+                BackgroundColor = MagickColors.Transparent,
+                Width = 610,
+                Height = 379
+            };
+
+            using var text = new MagickImage($"caption:{PrepText(stripped).Replace("\\", "\\\\")}", textSettings);
+            text.Rotate(-6.92);
+            template.Composite(text, 144, 628, CompositeOperator.SrcOver);
+            using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.RespondWithFileAsync("kaededab.png", output);
+
+        }
+
+        //This command was the most bullshit to implement to CLOSELY imitate the java version. Never. Again.
+        [Command("gru"), Description("Gru demonstrates your master plan...?"), Category(Category.Meme), ExtendedDescription("I wonder what would happen if you typed `--hyper` at the end..."), Priority(2)]
+        async Task Gru(CommandContext ctx, [Description("Text surrounded in \"quotes\", or a URL to an image.")] string Input1, [Description("If no input given, Input1 will carry over.")] string Input2, [Description("If no input given, Input2 will carry over.")] string Input3, [HiddenParam, RemainingText] FlagArgs f = new FlagArgs()) {
+            await ctx.TriggerTypingAsync();
+
+            //This is SUPER gross but it lets us do things the way we want, shush.
+            var flags1 = FlagArgs.ParseString(Input1, out var stripped1) ?? new FlagArgs();
+            var flags2 = FlagArgs.ParseString(Input2, out var stripped2) ?? new FlagArgs();
+            var flags3 = FlagArgs.ParseString(Input3, out var stripped3) ?? new FlagArgs();
+
+            var egg = f.ParseBool("egg") ?? flags1.ParseBool("egg") ?? flags2.ParseBool("egg") ?? flags3.ParseBool("egg") ?? false;
+            var hyper = f.ParseBool("hyper") ?? flags1.ParseBool("hyper") ?? flags2.ParseBool("hyper") ?? flags3.ParseBool("hyper") ?? false;
+
+            //WELCOME TO MY BULLSHIT DETECTOR
+            if (string.IsNullOrWhiteSpace(stripped1)) {
+                stripped1 = string.IsNullOrWhiteSpace(stripped2) ? string.IsNullOrWhiteSpace(stripped3) ? null : stripped3 : stripped2;
+            }
+
+            if (string.IsNullOrWhiteSpace(stripped2)) {
+                stripped2 = string.IsNullOrWhiteSpace(stripped1) ? string.IsNullOrWhiteSpace(stripped3) ? null : stripped3 : stripped1;
+            }
+
+            if (string.IsNullOrWhiteSpace(stripped3)) {
+                stripped3 = string.IsNullOrWhiteSpace(stripped1) ? string.IsNullOrWhiteSpace(stripped2) ? null : stripped2 : stripped1;
+            }
+
+            if (stripped1 == null) {
+                await ctx.RespondAsync("No valid arguments.");
+                return;
+            }
+
+            using var result = await GenerateGru(ctx, stripped1, stripped2, stripped3, egg, hyper);
+            await ctx.RespondWithFileAsync("masterplan.png", result);
+        }
+
+        [Command("gru"), Priority(1)]
+        async Task Gru(CommandContext ctx, [Description("Text surrounded in \"quotes\", or a URL to an image.")] string Input1, [Description("If no input given, Input1 will carry over.")] string Input2) {
+            await ctx.TriggerTypingAsync();
+
+            //This is gross but it lets us do things the way we want, shush.
+            var flags1 = FlagArgs.ParseString(Input1, out var stripped1) ?? new FlagArgs();
+            var flags2 = FlagArgs.ParseString(Input2, out var stripped2) ?? new FlagArgs();
+
+            var egg = flags1.ParseBool("egg") ?? flags2.ParseBool("egg") ?? false;
+            var hyper = flags1.ParseBool("hyper") ?? flags2.ParseBool("hyper") ?? false;
+
+            //WELCOME TO MY BULLSHIT DETECTOR (two argument edition)
+            if (string.IsNullOrWhiteSpace(stripped1)) {
+                stripped1 = string.IsNullOrWhiteSpace(stripped2) ? null : stripped2;
+            }
+
+            if (string.IsNullOrWhiteSpace(stripped2)) {
+                stripped2 = string.IsNullOrWhiteSpace(stripped1) ? null : stripped1;
+            }
+
+            if (stripped1 == null) {
+                await ctx.RespondAsync("No valid arguments.");
+                return;
+            }
+
+            using var result = await GenerateGru(ctx, stripped1, stripped2, stripped2, egg, hyper);
+            await ctx.RespondWithFileAsync("masterplan.png", result);
+        }
+
+        [Command("gru"), Priority(0)]
+        async Task Gru(CommandContext ctx, [Description("Text surrounded in \"quotes\", or a URL to an image.")] string Input) {
+            await ctx.TriggerTypingAsync();
+
+            //This is gross but it lets us do things the way we want, shush.
+            var flags1 = FlagArgs.ParseString(Input, out var stripped) ?? new FlagArgs();
+
+            var egg = flags1.ParseBool("egg") ?? false;
+            var hyper = flags1.ParseBool("hyper") ?? false;
+
+            //WELCOME TO MY BULLSHIT DETECTOR (single argument edition)
+            if (string.IsNullOrWhiteSpace(stripped)) {
+                await ctx.RespondAsync("No valid arguments.");
+                return;
+            }
+
+            using var result = await GenerateGru(ctx, stripped, stripped, stripped, egg, hyper);
+            await ctx.RespondWithFileAsync("masterplan.png", result);
+        }
+
+        async Task<MemoryStream> GenerateGru(CommandContext ctx, string i1, string i2, string i3, bool egg, bool hyper) {
+            //Converts our first input to a URI, will be null if not a valid URL.
+            Uri uri1 = await Util.ConvertArgAsync<Uri>(i1, ctx);
+            //If our second input is the same as our first, we reuse the first variable, otherwise convert to URI.
+            Uri uri2 = i2 == i1 ? uri1 : await Util.ConvertArgAsync<Uri>(i2, ctx);
+            //Same logic applies here.
+            Uri uri3 = i3 == i2 ? uri2 : await Util.ConvertArgAsync<Uri>(i3, ctx);
+
+            using var template = new MagickImage($"Resource/Files/memegen/grusmasterplan{(egg ? "egg" : "")}{(hyper ? "hyper" : "")}.png");
+
+            if (uri1 != null) await DrawImage(uri1, template, egg ? 493 : 436, 114);
+            else DrawText(i1, template, egg ? 493 : 436, 114);
+            if (uri2 != null) await DrawImage(uri2, template, egg ? 1343 : 1191, 114);
+            else DrawText(i2, template, egg ? 1343 : 1191, 114);
+            if (uri3 != null) {
+                await DrawImage(uri3, template, egg ? 491 : 442, 595);
+                await DrawImage(uri3, template, egg ? 1347 : 1190, 595);
+                if (hyper) await DrawImage(uri3, template, egg ? 918 : 786, 1073);
+            } else {
+                DrawText(i3, template, egg ? 491 : 442, 595);
+                DrawText(i3, template, egg ? 1347 : 1190, 595);
+                if (hyper) DrawText(i3, template, egg ? 918 : 786, 1073);
+            }
+
+            return new MemoryStream(template.ToByteArray());
+
+            //A method in a method? Crazy.
+            async Task DrawImage(Uri uri, MagickImage template, int x, int y) {
+                using (var client = new WebClient()) {
+                    using var img = await client.OpenReadTaskAsync(uri);
+                    using var image = new MagickImage(img) {
+                        BackgroundColor = MagickColors.Transparent
+                    };
+                    image.Resize(270, 360);
+                    image.Extent(270, 360, Gravity.Center);
+
+                    template.Composite(image, x, y, CompositeOperator.SrcOver);
+                }
+            }
+
+            //Another method in a method? Crazy.
+            void DrawText(string str, MagickImage template, int x, int y) {
                 var textSettings = new MagickReadSettings() {
                     Font = "Calibri-Bold",
                     TextGravity = Gravity.Center,
                     FillColor = MagickColors.Black,
                     BackgroundColor = MagickColors.Transparent,
-                    Width = 610,
-                    Height = 379
+                    Width = 270,
+                    Height = 360
                 };
 
-                using var text = new MagickImage($"caption:{PrepText(stripped).Replace("\\", "\\\\")}", textSettings);
-                text.Rotate(-6.92);
-                template.Composite(text, 144, 628, CompositeOperator.SrcOver);
-                using var output = new MemoryStream(template.ToByteArray());
+                using var text = new MagickImage($"caption:{PrepText(str).Replace("\\", "\\\\")}", textSettings);
 
-                await ctx.RespondWithFileAsync("kaededab.png", output);
+                template.Composite(text, x, y, CompositeOperator.SrcOver);
             }
         }
 
@@ -899,20 +1063,9 @@ namespace KekBot.Commands {
             for (var i = 0; i < split.Length; i++) {
                 if (split[i].Length > charLimit) {
                     for (var ii = 0; ii < split[i].Length; ii += charLimit) sb.Append(split[i].Substring(ii, Math.Min(charLimit, split[i].Length - ii)) + " ");
-                } else sb.Append(text + " ");
+                } else sb.Append(split[i] + " ");
             }
             return sb.ToString();
         }
-
-        /* UNUSED CODE FOR DRAWING ONTO A BLANK CANVAS
-         using var canvas = new MagickImage(MagickColors.Transparent, template.Width, template.Height);
-         var strokeColor = new DrawableStrokeColor(MagickColors.White);
-         var strokeWidth = new DrawableStrokeWidth(1);
-         var fillColor = new DrawableFillColor(MagickColors.White);
-         var bg = new DrawablePolygon(new PointD(291, 0), new PointD(599, 0), new PointD(599, 253), new PointD(291, 224));
-         canvas.Draw(strokeColor, strokeWidth, fillColor, bg);
-         canvas.Format = MagickFormat.Png;
-         */
-
     }
 }
