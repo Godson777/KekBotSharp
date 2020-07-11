@@ -12,7 +12,6 @@ namespace KekBot {
     public sealed class MusicService {
         private LavalinkService Lavalink { get; }
         private ConcurrentDictionary<ulong, GuildMusicData> MusicData { get; }
-        private string PlayingQueues { get; set; }
 
 
         public MusicService(LavalinkService lavalink) {
