@@ -11,6 +11,9 @@ using KekBot.Utils;
 using KekBot.Arguments;
 using DSharpPlus;
 using System.Text;
+using System.Runtime.CompilerServices;
+using System.Linq;
+using DSharpPlus.Lavalink;
 
 namespace KekBot.Commands {
     public class MemeCommands : BaseCommandModule {
@@ -199,6 +202,12 @@ namespace KekBot.Commands {
         async Task YouTried(CommandContext ctx) {
             await ctx.TriggerTypingAsync();
             await ctx.RespondWithFileAsync(Directory.GetFiles("Resource/Files/youtried").RandomElement());
+        }
+
+        [Command("lean"), Description("Leans in your discord."), Category(Category.Meme)]
+        async Task Lean(CommandContext ctx) {
+            await ctx.TriggerTypingAsync();
+            await ctx.RespondWithFileAsync(Directory.GetFiles("Resource/Files/lean").RandomElement());
         }
 
         [Command("johnny"), Description("HEREEEE'S JOHNNY!"), Category(Category.Meme)]
@@ -886,6 +895,76 @@ namespace KekBot.Commands {
 
         }
 
+        [Command("switch"), Description("Shows how easy it is to setup a switch, with a twist."), Category(Category.Meme)]
+        async Task Switch(CommandContext ctx, [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")] Uri? Image = null) {
+            await ctx.TriggerTypingAsync();
+
+            Uri? uri = Image;
+            //Checks if "Image" was null.
+            if (uri == null) {
+                if (ctx.Message.Attachments.Count > 0) {
+                    uri = new Uri(ctx.Message.Attachments[0].Url);
+                } else {
+                    uri = await HuntForImage(ctx);
+                }
+            }
+            //Checks if the search failed.
+            if (uri == null) {
+                await ctx.RespondAsync("No image found.");
+                return;
+            }
+
+            using (var client = new WebClient()) {
+                using var _ = await client.OpenReadTaskAsync(uri);
+                using var image = new MagickImage(_);
+                using var template = new MagickImage("Resource/Files/memegen/switch_setup.png");
+
+                image.Resize(174, 157);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(174, 157, Gravity.Center);
+                template.Composite(image, 366, 214, CompositeOperator.DstOver);
+
+                using var output = new MemoryStream(template.ToByteArray());
+
+                await ctx.RespondWithFileAsync("swatch.png", output);
+            }
+        }
+
+        [Command("www"), Description("Thanks to the miracle of the world wide web, I can search anything I want!"), Category(Category.Meme)]
+        async Task WWW(CommandContext ctx, [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")] Uri? Image = null) {
+            await ctx.TriggerTypingAsync();
+
+            Uri? uri = Image;
+            //Checks if "Image" was null.
+            if (uri == null) {
+                if (ctx.Message.Attachments.Count > 0) {
+                    uri = new Uri(ctx.Message.Attachments[0].Url);
+                } else {
+                    uri = await HuntForImage(ctx);
+                }
+            }
+            //Checks if the search failed.
+            if (uri == null) {
+                await ctx.RespondAsync("No image found.");
+                return;
+            }
+
+            using (var client = new WebClient()) {
+                using var _ = await client.OpenReadTaskAsync(uri);
+                using var image = new MagickImage(_);
+                using var template = new MagickImage("Resource/Files/memegen/www.png");
+
+                image.Resize(165, 131);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(165, 131, Gravity.Center);
+                template.Composite(image, 132, 466, CompositeOperator.DstOver);
+
+                using var output = new MemoryStream(template.ToByteArray());
+
+                await ctx.RespondWithFileAsync("marvelous.png", output);
+            }
+        }
+
         //This command was the most bullshit to implement to CLOSELY imitate the java version. Never. Again.
         [Command("gru"), Description("Gru demonstrates your master plan...?"), Category(Category.Meme), ExtendedDescription("I wonder what would happen if you typed `--hyper` at the end..."), Priority(2)]
         async Task Gru(CommandContext ctx, [Description("Text surrounded in \"quotes\", or a URL to an image.")] string Input1, [Description("If no input given, Input1 will carry over.")] string Input2, [Description("If no input given, Input2 will carry over.")] string Input3, [HiddenParam, RemainingText] FlagArgs f = new FlagArgs()) {
@@ -1024,6 +1103,81 @@ namespace KekBot.Commands {
                 using var text = new MagickImage($"caption:{PrepText(str).Replace("\\", "\\\\")}", textSettings);
 
                 template.Composite(text, x, y, CompositeOperator.SrcOver);
+            }
+        }
+
+        sealed class MemeVoiceCommands : BaseCommandModule {
+            private MusicService Music { get; }
+            private GuildMusicData GuildMusic { get; set; }
+
+            public MemeVoiceCommands(MusicService music) {
+                this.Music = music;
+            }
+
+            public override async Task BeforeExecutionAsync(CommandContext ctx) {
+                this.GuildMusic = await Music.GetDataAsync(ctx.Guild);
+                if (this.GuildMusic != null && GuildMusic.IsPlaying && !this.GuildMusic.IsMeme) {
+                    throw new CommandCancelledException();
+                }
+                var vs = ctx.Member.VoiceState;
+                var chn = vs?.Channel;
+                if (chn == null) {
+                    await ctx.RespondAsync($"You need to be in a voice channel. (Debug Message)");
+                    throw new CommandCancelledException();
+                }
+
+                var mbr = ctx.Guild.CurrentMember?.VoiceState?.Channel;
+                if (mbr != null && chn != mbr) {
+                    await ctx.RespondAsync($"You need to be in the same voice channel. (Debug Message)");
+                    throw new CommandCancelledException();
+                }
+
+                this.GuildMusic = await this.Music.GetOrCreateDataAsync(ctx.Guild);
+
+                await base.BeforeExecutionAsync(ctx);
+            }
+
+            //A few hacky workarounds to get the music player to play memes, but it's better than nothing.
+            [Command("granddad"), Description("FLEENSTONES!?"), Category(Category.Meme)]
+            async Task GrandDad(CommandContext ctx, [HiddenParam] FlagArgs flags = new FlagArgs()) {
+                var reboot = flags.ParseBool("reboot") ?? false;
+                var trackLoad = await Music.GetTracksFromFileAsync(new FileInfo(Directory.GetFiles($"Resource/Files/sound/granddad{(reboot ? "/reboot" : "")}").RandomElement()));
+                var tracks = trackLoad.Tracks;
+                foreach (var track in tracks)
+                    this.GuildMusic.Enqueue(new MusicItem(track, ctx.Member));
+
+                var vs = ctx.Member.VoiceState;
+                var chn = vs.Channel;
+                await this.GuildMusic.CreateMemeAsync(chn);
+                await this.GuildMusic.PlayAsync();
+            }
+
+            [Command("jontron"), Description("Ech ~Jontron"), Category(Category.Meme)]
+            async Task Jontron(CommandContext ctx, [HiddenParam] FlagArgs flags = new FlagArgs()) {
+                var reboot = flags.ParseBool("reboot") ?? false;
+                var trackLoad = await Music.GetTracksFromFileAsync(new FileInfo(Directory.GetFiles($"Resource/Files/sound/jontron{(reboot ? "/reboot" : "")}").RandomElement()));
+                var tracks = trackLoad.Tracks;
+                foreach (var track in tracks)
+                    this.GuildMusic.Enqueue(new MusicItem(track, ctx.Member));
+
+                var vs = ctx.Member.VoiceState;
+                var chn = vs.Channel;
+                await this.GuildMusic.CreateMemeAsync(chn);
+                await this.GuildMusic.PlayAsync();
+            }
+
+            [Command("gabe"), Description("\"Bork!\" ~Gabe 2k17 <3"), Aliases("bork"), Category(Category.Meme)]
+            async Task Gabe(CommandContext ctx, [HiddenParam] FlagArgs flags = new FlagArgs()) {
+                var reboot = flags.ParseBool("reboot") ?? false;
+                var trackLoad = await Music.GetTracksFromFileAsync(new FileInfo(Directory.GetFiles($"Resource/Files/sound/gabe{(reboot ? "/reboot" : "")}").RandomElement()));
+                var tracks = trackLoad.Tracks;
+                foreach (var track in tracks)
+                    this.GuildMusic.Enqueue(new MusicItem(track, ctx.Member));
+
+                var vs = ctx.Member.VoiceState;
+                var chn = vs.Channel;
+                await this.GuildMusic.CreateMemeAsync(chn);
+                await this.GuildMusic.PlayAsync();
             }
         }
 

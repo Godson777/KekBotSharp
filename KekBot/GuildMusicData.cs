@@ -210,6 +210,7 @@ namespace KekBot {
                 return false;
 
             this.Player = await this.Lavalink.LavalinkNode.ConnectAsync(channel);
+            this.IsMeme = false;
             if (this.Volume != 100)
                 await this.Player.SetVolumeAsync(this.Volume);
             this.Player.PlaybackFinished += this.PlaybackFinished;
@@ -217,15 +218,16 @@ namespace KekBot {
             return true;
         }
 
-        public async Task CreateMemeAsync(DiscordChannel channel) {
+        public async Task<bool> CreateMemeAsync(DiscordChannel channel) {
             if (this.Player != null && this.Player.IsConnected)
-                return;
+                return false;
 
             this.Player = await this.Lavalink.LavalinkNode.ConnectAsync(channel);
             this.IsMeme = true;
             if (this.Volume != 100)
                 await this.Player.SetVolumeAsync(this.Volume);
             this.Player.PlaybackFinished += this.PlaybackFinished;
+            return true;
         }
 
         public async Task DestroyPlayerAsync() {
@@ -237,8 +239,11 @@ namespace KekBot {
 
             this.Player = null;
             this.Host = null;
-            await CommandChannel.SendMessageAsync("Music Session Ended (Debug Message)");
-            this.CommandChannel = null; 
+            if (!IsMeme) await CommandChannel.SendMessageAsync("Music Session Ended (Debug Message)");
+            IsMeme = false;
+            IsPlaying = false;
+            this.CommandChannel = null;
+            this.NowPlaying = default;
         }
 
         public TimeSpan GetCurrentPosition() {

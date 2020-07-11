@@ -237,7 +237,7 @@ namespace KekBot.Commands {
         }
 
         [Group("music"), Aliases("m"), Description("Central command for all music related actions.")]
-        public sealed class MusicCommand : BaseCommandModule {
+        sealed class MusicCommand : BaseCommandModule {
             private MusicService Music { get; }
 
             private GuildMusicData GuildMusic { get; set; }
@@ -246,6 +246,10 @@ namespace KekBot.Commands {
                 this.Music = music;
             }
             public override async Task BeforeExecutionAsync(CommandContext ctx) {
+                this.GuildMusic = await Music.GetDataAsync(ctx.Guild);
+                if (GuildMusic != null && GuildMusic.IsPlaying && this.GuildMusic.IsMeme) {
+                    throw new CommandCancelledException();
+                }
                 var vs = ctx.Member.VoiceState;
                 var chn = vs?.Channel;
                 if (chn == null) {

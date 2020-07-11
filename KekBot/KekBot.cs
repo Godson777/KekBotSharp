@@ -144,7 +144,6 @@ namespace KekBot {
             CommandsNext.RegisterCommands<TestCommand>();
             CommandsNext.RegisterCommands<PingCommand>();
             CommandsNext.RegisterCommands<OwnerCommands>();
-            CommandsNext.RegisterCommands<TestCommandTwo>();
             CommandsNext.RegisterCommands<HelpCommand>();
             CommandsNext.RegisterCommands<FunCommands>();
             CommandsNext.RegisterCommands<MemeCommands>();
