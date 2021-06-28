@@ -1,0 +1,39 @@
+version: 2
+updates:
+- package-ecosystem: nuget
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: DSharpPlus
+    versions:
+    - 4.0.0
+    - 4.0.0-rc2
+    - 4.0.0-rc3
+  - dependency-name: DSharpPlus.Interactivity
+    versions:
+    - 4.0.0
+    - 4.0.0-rc2
+    - 4.0.0-rc3
+  - dependency-name: DSharpPlus.Lavalink
+    versions:
+    - 4.0.0
+    - 4.0.0-rc2
+    - 4.0.0-rc3
+  - dependency-name: DSharpPlus.CommandsNext
+    versions:
+    - 4.0.0
+    - 4.0.0-rc2
+    - 4.0.0-rc3
+  - dependency-name: DSharpPlus.VoiceNext
+    versions:
+    - 4.0.0
+    - 4.0.0-rc2
+    - 4.0.0-rc3
+  - dependency-name: Magick.NET-Q16-AnyCPU
+    versions:
+    - 7.23.1
+    - 7.23.2
+    - 7.23.2.1
+    - 7.23.3
