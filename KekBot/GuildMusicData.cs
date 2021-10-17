@@ -266,7 +266,7 @@ namespace KekBot {
             }
         }
 
-        private async Task PlaybackFinished(TrackFinishEventArgs e) {
+        private async Task PlaybackFinished(LavalinkGuildConnection connection, TrackFinishEventArgs e) {
             await Task.Delay(500);
             this.IsPlaying = false;
             await this.PlayHandlerAsync();

@@ -16,8 +16,22 @@ namespace KekBot.Menu {
         public DiscordColor Color { get; set; } = DiscordColor.White;
         /// <summary>
         /// This final action is called when the user hits the stop button. (Or the paginator times out from no response.)
+        /// By default, the final action will disable the buttons embedded in the message.
         /// </summary>
-        public Action<DiscordMessage>? FinalAction { get; set; } = async m => await m.DeleteAllReactionsAsync();
+        public Action<DiscordMessage>? FinalAction { private get; set; } = async m => {
+            var buttons = m.Components.ToList()[0].Components.ToList();
+            var disabledBtns = new List<DiscordButtonComponent>();
+
+            foreach (DiscordButtonComponent btn in buttons) {
+                btn.Disabled = true;
+                disabledBtns.Add(btn);
+            }
+
+            await m.ModifyAsync(new DiscordMessageBuilder()
+                .WithContent(m.Content)
+                .AddEmbeds(m.Embeds)
+                .AddComponents(disabledBtns.ToArray()));
+        };
         /// <summary>
         /// If true, the page count will be shown at the footer.
         /// </summary>
@@ -27,11 +41,12 @@ namespace KekBot.Menu {
         /// The list of embeds to paginate.
         /// </summary>
         public List<DiscordEmbed> Embeds { get; private set; } = new List<DiscordEmbed>();
+        public bool WrapPageEnds { private get; set; } = true;
 
-        protected string Left { get; private set; } = "◀️";
-        protected string Stop { get; private set; } = "⏹️";
-        protected string Right { get; private set; } = "▶️";
-        protected string[] LeftRightStop() => new string[] { Left, Right, Stop };
+        protected DiscordButtonComponent LeftBtn { get; private set; } = new DiscordButtonComponent(DSharpPlus.ButtonStyle.Primary, "paginator_left", null, emoji: new DiscordComponentEmoji("◀️"));
+        protected DiscordButtonComponent StopBtn { get; private set; } = new DiscordButtonComponent(DSharpPlus.ButtonStyle.Primary, "paginator_stop", null, emoji: new DiscordComponentEmoji("⏹"));
+        protected DiscordButtonComponent RightBtn { get; private set; } = new DiscordButtonComponent(DSharpPlus.ButtonStyle.Primary, "paginator_right", null, emoji: new DiscordComponentEmoji("▶"));
+
         public EmbedPaginator(InteractivityExtension interactivity) : base(interactivity) {
         }
 
@@ -56,7 +71,9 @@ namespace KekBot.Menu {
             else if (pageNum > Pages)
                 pageNum = Pages;
             var msg = RenderPage(pageNum);
-            await Initialize(await channel.SendMessageAsync(embed: msg), pageNum);
+            await Pagination(await channel.SendMessageAsync(new DiscordMessageBuilder()
+                .WithEmbed(msg)
+                .AddComponents(GetButtonList())), pageNum);
         }
 
         private async Task Paginate(DiscordMessage message, int pageNum) {
@@ -65,46 +82,57 @@ namespace KekBot.Menu {
             else if (pageNum > Pages)
                 pageNum = Pages;
             var msg = RenderPage(pageNum);
-            await Initialize(await message.ModifyAsync(embed: msg), pageNum);
+            await Pagination(await message.ModifyAsync(new DiscordMessageBuilder()
+                .WithEmbed(msg)
+                .AddComponents(GetButtonList())), pageNum);
         }
 
-        private async Task Initialize(DiscordMessage message, int pageNum) {
+        private DiscordComponent[] GetButtonList() {
+            var buttons = new List<DiscordComponent>();
             if (Pages > 1) {
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Left));
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Stop));
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Right));
+               buttons.Add(LeftBtn);
+                buttons.Add(StopBtn);
+                buttons.Add(RightBtn);
             } else {
-                await message.CreateReactionAsync(DiscordEmoji.FromUnicode(Stop));
+                buttons.Add(StopBtn);
             }
-            await Pagination(message, pageNum);
+            return buttons.ToArray();
         }
 
         private async Task Pagination(DiscordMessage message, int pageNum) {
-            var result = await Interactivity.WaitForReactionAsync(react => {
-                if (react.Message.Id != message.Id) return false;
-                if (!LeftRightStop().Contains(react.Emoji.Name)) return false;
-                return IsValidUser(react.User, react.Guild);
-            }, Timeout);
+            var result = await Interactivity.WaitForButtonAsync(message, Timeout);
 
             if (result.TimedOut) {
                 FinalAction?.Invoke(message);
                 return;
             }
 
-            var newPageNum = pageNum;
-            var e = result.Result.Emoji.Name;
-            if (e == Left) {
-                if (newPageNum > 1) newPageNum--;
-            } else if (e == Right) {
-                if (newPageNum < Pages) newPageNum++;
-            } else if (e == Stop) {
-                FinalAction?.Invoke(message);
+            //Throw an error as an emphemeral message if the user attempting to interact isn't "valid".
+            if (!IsValidUser(result.Result.Interaction.User, result.Result.Interaction.Guild)) {
+                await result.Result.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Only the person who ran the command can interact with this menu.").AsEphemeral(true));
+                await Pagination(result.Result.Message, pageNum);
                 return;
             }
 
-            await result.Result.Message.DeleteReactionAsync(result.Result.Emoji, result.Result.User);
-            var m = await message.ModifyAsync(embed: RenderPage(newPageNum));
-            await Pagination(m, newPageNum);
+            var newPageNum = pageNum;
+            var e = result.Result.Id;
+            if (e == LeftBtn.CustomId) {
+                if (newPageNum == 1 && WrapPageEnds) newPageNum = Pages + 1;
+                if (newPageNum > 1) newPageNum--;
+            } else if (e == RightBtn.CustomId) {
+                if (newPageNum == Pages && WrapPageEnds) newPageNum = 0;
+                if (newPageNum < Pages) newPageNum++;
+            } else if (e == StopBtn.CustomId) {
+                await result.Result.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
+                FinalAction?.Invoke(result.Result.Message);
+                return;
+            }
+
+
+            await result.Result.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
+                .AddEmbed(RenderPage(newPageNum))
+                .AddComponents(GetButtonList()));
+            await Pagination(result.Result.Message, newPageNum);
         }
 
         private DiscordEmbed RenderPage(int pageNum) {

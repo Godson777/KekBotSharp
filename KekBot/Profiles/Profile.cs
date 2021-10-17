@@ -7,7 +7,7 @@ namespace KekBot.Profiles {
     public class Profile {
         //private properties
         [JsonProperty("User ID")]
-        private string UserID { get; }
+        private ulong UserID { get; }
         [JsonProperty("Token")]
         private string TokenID { get; }
         [JsonProperty("Background")]
@@ -56,7 +56,5 @@ namespace KekBot.Profiles {
          * @body Alternatively, a seperate program could be made in either Java or C# to suit this purpose. 
          * Either way, there needs to be a way to migrate all pre 2.0 profiles to the new format provided in our current `Profile` class.
          */
-
-
     }
 }

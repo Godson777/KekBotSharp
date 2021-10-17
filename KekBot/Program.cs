@@ -95,6 +95,10 @@ namespace KekBot {
                 Console.WriteLine("[RethinkDB] \"Twitter\" table was not found, so it is being made.");
                 R.TableCreate("Twitter").OptArg("primary_key", "Account ID").Run(Conn);
             }
+            if (!R.TableList().Contains("Items").Run<bool>(Conn)) {
+                Console.WriteLine("[RethinkDB] \"Items\" table was not found, so it is being made.");
+                R.TableCreate("Items").OptArg("primary_key", "Item ID").Run(Conn);
+            }
             Console.WriteLine("[RethinkDB] Tables verified!");
         }
         /*

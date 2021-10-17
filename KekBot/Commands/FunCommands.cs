@@ -10,12 +10,15 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.Lavalink;
+using DSharpPlus.Lavalink.EventArgs;
 using KekBot.Arguments;
 using KekBot.Attributes;
 using KekBot.Menu;
 using KekBot.Services;
 using KekBot.Utils;
+using RethinkDb.Driver.Model;
 
 namespace KekBot.Commands {
     public class FunCommands : BaseCommandModule {
@@ -66,7 +69,7 @@ namespace KekBot.Commands {
         }
 
         [Group("quote"), Description("Grabs a random quote from a list of quotes made in your server."), Category(Category.Fun), Aliases("q")]
-        public class QuoteCommand : BaseCommandModule {
+        sealed class QuoteCommand : BaseCommandModule {
             [GroupCommand, Priority(0)]
             async Task Quote(CommandContext ctx) {
                 var set = await Settings.Get(ctx.Guild);
@@ -96,7 +99,7 @@ namespace KekBot.Commands {
             public async Task Add(CommandContext ctx, [Description("The quote you want to add."), RemainingText, Required] string Quote = "") {
                 var set = await Settings.Get(ctx.Guild);
                 if (string.IsNullOrEmpty(Quote)) {
-                    //do nothing for now, requires questionnaire system to be ported over.
+                    //TODO: do nothing for now, requires questionnaire system to be ported over.
                     await ctx.RespondAsync("blech ew gross unfinished things");
                     return;
                 }
@@ -123,7 +126,7 @@ namespace KekBot.Commands {
                     return;
                 }
                 if (set.Quotes.Count < toGet) {
-                    //do nothing rn im lazy
+                    //TODO: either questionnaire or spit error msg, undecided
                     return;
                 }
 
@@ -137,7 +140,7 @@ namespace KekBot.Commands {
                 await ctx.RespondAsync($"Successfully removed quote: `{quote}`.");
             }
 
-            [Command("list"), Description("Lists all of your quotes.")]
+            [Command("list"), Aliases("l"), Description("Lists all of your quotes.")]
             async Task List(CommandContext ctx) {
                 var set = await Settings.Get(ctx.Guild);
                 if (set.Quotes.Count == 0) {
@@ -167,12 +170,12 @@ namespace KekBot.Commands {
                 }
 
                 if (set.Quotes.Count < toGet || toGet < 0) {
-                    //do nothing rn im lazy
+                    //TODO: either questionnaire or spit error msg, undecided
                     return;
                 }
 
                 if (string.IsNullOrEmpty(Quote)) {
-                    //do nothing for now, requires questionnaire system to be ported over.
+                    //TODO: requires questionnaire system to be ported over.
                     await ctx.RespondAsync("blech ew gross unfinished things");
                     return;
                 }
@@ -230,13 +233,33 @@ namespace KekBot.Commands {
                 }
                 var dump = Encoding.UTF8.GetBytes(dumper.ToString());
                 var stream = new MemoryStream(dump);
-                await ctx.RespondWithFileAsync("quotes.txt", stream, "Dump successful, download below:");
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithContent("Dump successful. You can view it below:").WithFile("quotes.txt", stream).WithReply(ctx.Message.Id));
                 await stream.DisposeAsync();
 
             }
         }
 
-        [Group("music"), Aliases("m"), Description("Central command for all music related actions.")]
+        [Group("profile"), Description("Lets you view and edit your profile, and also viewing other peoples profiles.")]
+        sealed class ProfileCommand : BaseCommandModule {
+            [GroupCommand, Priority(0)]
+            async Task Profile(CommandContext ctx) {
+                await ctx.TriggerTypingAsync();
+                await ctx.RespondAsync("no");
+            }
+
+            [GroupCommand, Priority(1)]
+            async Task Profile(CommandContext ctx, [Description("The user whos profile you want to see.")] DiscordMember User) {
+                await ctx.TriggerTypingAsync();
+                await ctx.RespondAsync($"{User.DisplayName} is kinda gay lol");
+            }
+
+            [Command("edit"), Description("Opens the menu to edit your profile.")]
+            async Task Edit(CommandContext ctx) {
+                await ctx.RespondAsync("there is no edit menu.");
+            }
+        }
+
+        [Group("music"), Aliases("m"), Description("Central command for all music related actions."), Category(Category.Fun)]
         sealed class MusicCommand : BaseCommandModule {
             private MusicService Music { get; }
 
@@ -349,14 +372,33 @@ namespace KekBot.Commands {
                     results = results.Skip(index).Concat(results.Take(index));
                 }
 
-                var menu = new OrderedMenu(ctx.Client.GetInteractivity());
+                var menu = new SelectMenu(ctx.Client.GetInteractivity());
                 menu.Users.Add(ctx.User.Id);
-                menu.Choices.AddRange(results.ToList().GetRange(0, 8).Select((x) => $"`{x.Title}` by {x.Author}"));
+                menu.MaxChoices = 25;
+                var id = 0;
+                foreach (LavalinkTrack track in results.ToList()) {
+                    menu.AddChoice($"option_{++id}", $"by {track.Author}", track.Title);
+                }
+                //menu.Choices.AddRange(results.ToList().GetRange(0, 8).Select((x) => $"`{x.Title}` by {x.Author}"));
 
-                menu.Text = "Choose a track:";
-                menu.Action = async (_, x) => {
-                    var el = results.ElementAt(x - 1);
-                    await Queue(ctx, el.Uri);
+                menu.Text = "I found some results! Please choose at least 1 of these tracks:";
+                menu.Action = async (msg, options) => {
+                    foreach (string option in options) {
+                        var selection = int.Parse(option.Substring(7)) - 1;
+                        this.GuildMusic.Enqueue(new MusicItem(results.ToList()[selection], ctx.Member));
+                    }
+
+                    var vs = ctx.Member.VoiceState;
+                    var chn = vs.Channel;
+                    bool first = await this.GuildMusic.CreatePlayerAsync(chn);
+                    await this.GuildMusic.PlayAsync();
+                    await msg.ModifyAsync(new DiscordMessageBuilder().WithContent(msg.Content));
+                    if (options.Length > 1) await ctx.Channel.SendMessageAsync($"Added {options.Length} tracks to the queue.");
+                    else {
+                        var selection = int.Parse(options[0].Substring(7)) - 1;
+                        var track = results.ToList()[selection];
+                        await ctx.Channel.SendMessageAsync($"Added {Formatter.InlineCode(track.Title)} by {Formatter.InlineCode(track.Author)} to the queue. (Time before it plays: {Util.PrintTimeSpan(this.GuildMusic.GetTimeBeforeNext())} | {Formatter.Bold($"Queue Position: {this.GuildMusic.Queue.Count}")})");
+                    }
                 };
                 await menu.Display(ctx.Channel);
             }
@@ -505,6 +547,5 @@ namespace KekBot.Commands {
                 await this.GuildMusic.SeekAsync(-Time, true);
             }
         }
-
     }
 }

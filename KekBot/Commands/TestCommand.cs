@@ -1,10 +1,15 @@
-﻿using DSharpPlus.CommandsNext;
+﻿using DSharpPlus;
+using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using ImageMagick;
 using ImageMagick.Defines;
 using KekBot.Menu;
+using KekBot.Profiles;
+using KekBot.Profiles.Item;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -45,7 +50,7 @@ namespace KekBot.Commands {
 
             await pag.Display(ctx.Channel);*/
 
-            await ctx.TriggerTypingAsync();
+            /*await ctx.TriggerTypingAsync();
 
             using (var client = new WebClient()) {
                 var _ = await client.OpenReadTaskAsync(new Uri(ctx.User.AvatarUrl));
@@ -72,8 +77,44 @@ namespace KekBot.Commands {
                     ava.Dispose();
                     test.Dispose();
                 }
+            }*/
+
+            //var profile = await LegacyProfile.getProfile(ctx.User);
+            //await ctx.RespondAsync(profile.SpitDebugInfo());
+
+            var options = new List<DiscordSelectComponentOption>();
+            options.Add(new DiscordSelectComponentOption("yo waddup im option 1", "option_1", "lol this is a description"));
+            options.Add(new DiscordSelectComponentOption("hi im option 2", "option_2", "wait this is a description?"));
+            options.Add(new DiscordSelectComponentOption("hey there im option 3", "option_3", "woah this is a description"));
+            options.Add(new DiscordSelectComponentOption("option 4, this is.", "option_4", "a description, this is"));
+            options.Add(new DiscordSelectComponentOption("im 5", "option_5", "wheeeeeeeeeee"));
+            var msg = await ctx.RespondAsync(new DiscordMessageBuilder().WithContent("This is a test message.").AddComponents(new DiscordSelectComponent("test_select", "Yo this is a test placeholder lol", options, false, 1, 5)).WithReply(ctx.Message.Id));
+            var result = await msg.WaitForSelectAsync(ctx.User, "test_select", TimeSpan.FromSeconds(30));
+            if (result.TimedOut) {
+                await msg.ModifyAsync(new DiscordMessageBuilder().WithContent("YOU TOOK TOO LONG DUMBASS."));
+            }
+
+            if (result.Result.Values[0] == "option_1") {
+                await result.Result.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("lol u picked option 1").AsEphemeral(true));
             }
         }
 
+        [Command("testitem")]
+        public async Task TestItem(CommandContext ctx) {
+            var bg = Background.New("test", "Test Background", "MARIO_GALAXY.png");
+            await ItemRegistry.Get.AddItem(bg);
+            await ctx.RespondAsync("Test Item Added");
+        }
+
+        [Command("gettestitem")]
+        public async Task GetTestItem(CommandContext ctx) {
+            var bg = ItemRegistry.Get.GetItemByID("test");
+            await ctx.RespondAsync($"DEBUG MESSAGE\n" +
+                $"Item Type:  {bg?.Tag}\n" +
+                $"Item ID: {bg?.ID}\n" +
+                $"Item Name: {bg?.Name}\n" +
+                $"That's all I care to test rn");
+            await new DiscordMessageBuilder().WithFile(new FileStream($"Resource/Files/profile/background/{bg?.File}", FileMode.Open)).SendAsync(ctx.Channel);
+        }
     }
 }

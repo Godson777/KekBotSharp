@@ -15,10 +15,10 @@ namespace KekBot.Services {
             Client.Ready += Ready;
         }
 
-        private async Task Ready(ReadyEventArgs e) {
+        private async Task Ready(DiscordClient client, ReadyEventArgs e) {
             if (this.LavalinkNode != null) return;
 
-            var lava = e.Client.GetLavalink();
+            var lava = client.GetLavalink();
             this.LavalinkNode = await lava.ConnectAsync(new LavalinkConfiguration {
                 Password = "youshallnotpass",
 

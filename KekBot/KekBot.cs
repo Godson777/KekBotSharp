@@ -22,6 +22,9 @@ using KekBot.Lib;
 using KekBot.Services;
 using KekBot.Utils;
 using System.Collections;
+using DSharpPlus.Interactivity.Extensions;
+using Microsoft.Extensions.Logging;
+using DSharpPlus.Exceptions;
 
 namespace KekBot {
     /// <summary>
@@ -84,7 +87,7 @@ namespace KekBot {
         private readonly List<Task> ThingsToWaitFor = new List<Task>();
 
         private Timer GameTimer { get; set; } = null;
-        private ConcurrentDictionary<ulong, string> PrefixSettings { get; }
+        private ConcurrentDictionary<ulong?, string> PrefixSettings { get; }
         private IServiceProvider Services { get; }
         private string DefaultPrefix = "$";
 
@@ -99,17 +102,16 @@ namespace KekBot {
                 TokenType = TokenType.Bot,
                 ShardCount = config.Shards,
                 ShardId = ShardID,
+                Intents = DiscordIntents.AllUnprivileged | DiscordIntents.GuildMembers,
 
                 AutoReconnect = true,
                 ReconnectIndefinitely = true,
                 GatewayCompressionLevel = GatewayCompressionLevel.Stream,
                 LargeThreshold = 1500,
 
-                UseInternalLogHandler = false,
-                LogLevel = LogLevel.Debug
+                MinimumLogLevel = LogLevel.Debug
             });
 
-            Discord.DebugLogger.LogMessageReceived += DebugLogger_LogMessageReceived;
             Discord.GuildAvailable += GuildAvailable;
             Discord.Ready += Ready;
             Discord.ClientErrored += DiscordErrored;
@@ -149,9 +151,9 @@ namespace KekBot {
             CommandsNext.RegisterCommands<MemeCommands>();
 
             if (config.WeebToken == null) {
-                Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "NOT registering weeb commands because no token was found >:(", DateTime.Now);
+                Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] NOT registering weeb commands because no token was found >:(", DateTime.Now);
             } else {
-                Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Initializing weeb commands", DateTime.Now);
+                Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] Initializing weeb commands", DateTime.Now);
                 CommandsNext.RegisterCommands<WeebCommands>();
             }
 
@@ -171,7 +173,7 @@ namespace KekBot {
                 }
             }
 
-            PrefixSettings = new ConcurrentDictionary<ulong, string>();
+            PrefixSettings = new ConcurrentDictionary<ulong?, string>();
 
             Interactivity = Discord.UseInteractivity(new InteractivityConfiguration());
 
@@ -192,16 +194,16 @@ namespace KekBot {
             CommandInfos.AddRange(FakeCommands.Values.Distinct().SelectMany(faker => faker.FakeCommandInfo));
         }
 
-        private Task SocketErrored(SocketErrorEventArgs e) {
+        private Task SocketErrored(DiscordClient client, SocketErrorEventArgs e) {
             var ex = e.Exception;
             while (ex is AggregateException)
                 ex = ex.InnerException;
 
-            e.Client.DebugLogger.LogMessage(LogLevel.Critical, LOGTAG, $"Socket threw an exception {ex}", DateTime.Now);
+            client.Logger.Log(LogLevel.Critical, $"[{LOGTAG}-{ShardID}] Socket threw an exception {ex}");
             return Task.CompletedTask;
         }
 
-        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
+        /*[SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "shut your whore mouth")]
         private void DebugLogger_LogMessageReceived(object? sender, DebugLogMessageEventArgs e) {
             lock (_logLock) {
                 var fg = Console.ForegroundColor;
@@ -242,35 +244,35 @@ namespace KekBot {
                 Console.ForegroundColor = fg;
                 Console.BackgroundColor = bg;
             }
-        }
+        }*/
 
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "I will destroy you")]
         public async Task StartAsync() {
-            Discord.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "Booting KekBot Shard.", DateTime.Now);
+            Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] Booting KekBot Shard.");
             await Task.WhenAll(ThingsToWaitFor);
             await Discord.ConnectAsync();
         }
 
-        private Task Ready(ReadyEventArgs e) {
-            e.Client.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, "KekBot is ready to roll!", DateTime.Now);
+        private Task Ready(DiscordClient client, ReadyEventArgs e) {
+            client.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] KekBot is ready to roll!");
 
             if (GameTimer == null) {
-                GameTimer = new Timer(GameTimerCallback, e.Client, TimeSpan.Zero, TimeSpan.FromMinutes(15));
+                GameTimer = new Timer(GameTimerCallback, client, TimeSpan.Zero, TimeSpan.FromMinutes(15));
             }
             return Task.CompletedTask;
         }
 
-        private async Task GuildAvailable(GuildCreateEventArgs e) {
+        private async Task GuildAvailable(DiscordClient client, GuildCreateEventArgs e) {
             var set = await LegacySettings.Get(e.Guild);
             if (set.Prefix != null) PrefixSettings.AddOrUpdate(e.Guild.Id, set.Prefix, (k, old) => set.Prefix);
         }
 
-        private Task DiscordErrored(ClientErrorEventArgs e) {
+        private Task DiscordErrored(DiscordClient client, ClientErrorEventArgs e) {
             var ex = e.Exception;
             while (ex is AggregateException)
                 ex = ex.InnerException;
 
-            e.Client.DebugLogger.LogMessage(LogLevel.Critical, LOGTAG, $"{e.EventName} threw an exception {ex.GetType()}: {ex.Message}", DateTime.Now);
+            client.Logger.Log(LogLevel.Critical, $"[{LOGTAG}-{ShardID}] {e.EventName} threw an exception {ex.GetType()}: {ex.Message}");
             return Task.CompletedTask;
         }
 
@@ -285,7 +287,7 @@ namespace KekBot {
             return Task.FromResult(pLen);
         }
 
-        private async Task HandleError(CommandErrorEventArgs errorArgs) {
+        private async Task HandleError(CommandsNextExtension cnext, CommandErrorEventArgs errorArgs) {
             var error = errorArgs.Exception;
             var ctx = errorArgs.Context;
             switch (error) {
@@ -307,12 +309,16 @@ namespace KekBot {
                         await ctx.RespondAsync($"Woah there, you don't have the `{permCheck.Permissions.ToPermissionString()}` permission! (Temp message)");
                         return;
                     }
+
+                case BadRequestException e: {
+                        ctx.Client.Logger.LogError(e.Errors);
+                        return;
+                    }
             }
 
             await ctx.Channel.SendMessageAsync($"An error occured: {error.Message}");
-            ctx.Client.DebugLogger.LogMessage(LogLevel.Error, LOGTAG, 
-                $"User '{ctx.User.Username}#{ctx.User.Discriminator}' ({ctx.User.Id}) tried to execute '{errorArgs.Command?.QualifiedName ?? "UNKNOWN COMMAND?"}' " +
-                $"but failed with {error}", DateTime.Now);
+            ctx.Client.Logger.Log(LogLevel.Error, $"[{LOGTAG}-{ShardID}] User '{ctx.User.Username}#{ctx.User.Discriminator}' ({ctx.User.Id}) tried to execute '{errorArgs.Command?.QualifiedName ?? "UNKNOWN COMMAND?"}' " +
+                $"but failed with {error}");
         }
 
         private async Task HandleUnknownCommand(CommandContext ctx, string cmdName) {
@@ -330,10 +336,10 @@ namespace KekBot {
                 status = status.Substring(status.IndexOf(" ") + 1);
 
                 await client.UpdateStatusAsync(new DiscordActivity(status, type), UserStatus.Online);
-                client.DebugLogger.LogMessage(LogLevel.Info, LOGTAG, $"Presense updated to ({type}) {status}", DateTime.Now);
+                client.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] Presense updated to ({type}) {status}");
                 GC.Collect();
             } catch (Exception e) {
-                client.DebugLogger.LogMessage(LogLevel.Error, LOGTAG, $"Could not update presense ({e.GetType()}: {e.Message})", DateTime.Now);
+                client.Logger.Log(LogLevel.Error, $"[{LOGTAG}-{ShardID}] Could not update presense ({e.GetType()}: {e.Message})");
             }
         }
 

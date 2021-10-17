@@ -14,6 +14,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using System.Linq;
 using DSharpPlus.Lavalink;
+using Microsoft.Extensions.Logging;
 
 namespace KekBot.Commands {
     public class MemeCommands : BaseCommandModule {
@@ -54,7 +55,7 @@ namespace KekBot.Commands {
                 template.Composite(image, 0, 1112, CompositeOperator.SrcOver);
 
                 using var output = new MemoryStream(template.ToByteArray());
-                await ctx.RespondWithFileAsync("test.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("test.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -90,7 +91,7 @@ namespace KekBot.Commands {
 
                     using var stream = new MemoryStream(gif.ToByteArray());
 
-                    await ctx.RespondWithFileAsync("triggered.gif", stream);
+                    await ctx.RespondAsync(new DiscordMessageBuilder().WithReply(ctx.Message.Id).WithFile("triggered.gif", stream));
                 }
             }
         }
@@ -108,7 +109,8 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("doubt.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithReply(ctx.Message.Id).WithFile("doubt.png", output));
+                
             }
         }
 
@@ -127,7 +129,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("erase.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("erase.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -164,7 +166,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("garage.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("garage.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -174,7 +176,8 @@ namespace KekBot.Commands {
 
             var reboot = args.ParseBool("reboot") ?? false;
 
-            await ctx.RespondWithFileAsync($"Resource/Files/memegen/topless_grill{(reboot ? "-reboot" : "")}.png");
+            using var file = new FileStream($"Resource/Files/memegen/topless_grill{(reboot ? "-reboot" : "")}.png", FileMode.Open);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile(file).WithReply(ctx.Message.Id));
         }
 
         [Command("poosy"), Description("\"Poosy...De...stroyer.\" ~Vinesauce Joel"), Category(Category.Meme)]
@@ -183,31 +186,36 @@ namespace KekBot.Commands {
 
             var reboot = args.ParseBool("reboot") ?? false;
 
-            await ctx.RespondWithFileAsync($"Resource/Files/memegen/poosy{(reboot ? "-reboot" : "")}.png");
+            using var file = new FileStream($"Resource/Files/memegen/poosy{(reboot ? "-reboot" : "")}.png", FileMode.Open);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile(file).WithReply(ctx.Message.Id));
         }
 
         [Command("justright"), Description("When you need Discord to be just right..."), Category(Category.Meme)]
         async Task JustRight(CommandContext ctx) {
             await ctx.TriggerTypingAsync();
-            await ctx.RespondWithFileAsync(Directory.GetFiles("Resource/Files/justright").RandomElement());
+            using var file = new FileStream(Directory.GetFiles("Resource/Files/justright").RandomElement(), FileMode.Open);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile(file).WithReply(ctx.Message.Id));
         }
 
         [Command("kirb"), Aliases("poyo"), Description("POYO"), Category(Category.Meme)]
         async Task Kirb(CommandContext ctx) {
             await ctx.TriggerTypingAsync();
-            await ctx.RespondWithFileAsync(Directory.GetFiles("Resource/Files/kirb").RandomElement());
+            using var file = new FileStream(Directory.GetFiles("Resource/Files/kirb").RandomElement(), FileMode.Open);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile(file).WithReply(ctx.Message.Id));
         }
 
         [Command("youtried"), Description("You tried. Here's a gold star!"), Category(Category.Meme)]
         async Task YouTried(CommandContext ctx) {
             await ctx.TriggerTypingAsync();
-            await ctx.RespondWithFileAsync(Directory.GetFiles("Resource/Files/youtried").RandomElement());
+            using var file = new FileStream(Directory.GetFiles("Resource/Files/youtried").RandomElement(), FileMode.Open);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile(file).WithReply(ctx.Message.Id));
         }
 
         [Command("lean"), Description("Leans in your discord."), Category(Category.Meme)]
         async Task Lean(CommandContext ctx) {
             await ctx.TriggerTypingAsync();
-            await ctx.RespondWithFileAsync(Directory.GetFiles("Resource/Files/lean").RandomElement());
+            using var file = new FileStream(Directory.GetFiles("Resource/Files/lean").RandomElement(), FileMode.Open);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile(file).WithReply(ctx.Message.Id));
         }
 
         [Command("johnny"), Description("HEREEEE'S JOHNNY!"), Category(Category.Meme)]
@@ -229,7 +237,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("jahnny.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("jahnny.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -266,7 +274,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("NOPE_NVM.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("NOPE_NVM.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -286,7 +294,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(gbj.ToByteArray());
 
-                await ctx.RespondWithFileAsync("gbj.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("gbj.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -321,7 +329,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(image.ToByteArray());
 
-                await ctx.RespondWithFileAsync("loogi.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("loogi.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -357,7 +365,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(image.ToByteArray());
 
-                await ctx.RespondWithFileAsync("magik.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("magik.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -400,7 +408,7 @@ namespace KekBot.Commands {
                 template.Composite(image, CompositeOperator.DstOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("poster.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("poster.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -427,7 +435,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("theking.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("theking.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -453,7 +461,7 @@ namespace KekBot.Commands {
                 template.Composite(ava, 46, 63, CompositeOperator.SrcOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("huh.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("huh.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -489,7 +497,7 @@ namespace KekBot.Commands {
                 template.Composite(image, 37, 555, CompositeOperator.DstOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("T E C H N O L O G Y.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("T E C H N O L O G Y.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -535,7 +543,7 @@ namespace KekBot.Commands {
                 template.Composite(image, 248, 159, CompositeOperator.DstOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("torture.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("torture.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -578,7 +586,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("trash.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("trash.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -617,7 +625,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("urgent.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("urgent.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -668,7 +676,7 @@ namespace KekBot.Commands {
                 template.Composite(image, CompositeOperator.DstOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("trash_but_its_not.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("trash_but_its_not.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -706,7 +714,7 @@ namespace KekBot.Commands {
                 template.Composite(text, 345, 426, CompositeOperator.SrcOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("byemom.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("byemom.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -761,12 +769,12 @@ namespace KekBot.Commands {
                     template.Composite(drawnQuote, 93, 133, CompositeOperator.SrcOver);
                     GC.Collect();
                 } catch (Exception e) {
-                    ctx.Client.DebugLogger.LogMessage(LogLevel.Error, KekBot.LOGTAG, "Could not generate a quote for the delet command. Field was left blank.", DateTime.Now);
+                    ctx.Client.Logger.Log(LogLevel.Error, KekBot.LOGTAG, "Could not generate a quote for the delet command. Field was left blank.", DateTime.Now);
                 }
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("delet.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("delet.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -801,7 +809,7 @@ namespace KekBot.Commands {
                 template.Composite(image, 135, 57, CompositeOperator.SrcOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("doggo.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("doggo.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -825,7 +833,7 @@ namespace KekBot.Commands {
             template.Composite(text, 135, 57, CompositeOperator.SrcOver);
             using var output = new MemoryStream(template.ToByteArray());
 
-            await ctx.RespondWithFileAsync("doggo.png", output);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("doggo.png", output).WithReply(ctx.Message.Id));
         }
 
         [Command("kaede"), Description("Kaede holds up a sign, whatever the sign contains is up to you."), Category(Category.Meme), Priority(1)]
@@ -862,7 +870,7 @@ namespace KekBot.Commands {
                 template.Composite(image, 144, 628, CompositeOperator.SrcOver);
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("kaededab.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("kaededab.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -891,7 +899,7 @@ namespace KekBot.Commands {
             template.Composite(text, 144, 628, CompositeOperator.SrcOver);
             using var output = new MemoryStream(template.ToByteArray());
 
-            await ctx.RespondWithFileAsync("kaededab.png", output);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("kaededab.png", output).WithReply(ctx.Message.Id));
 
         }
 
@@ -926,7 +934,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("swatch.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("swatch.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -961,7 +969,7 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
 
-                await ctx.RespondWithFileAsync("marvelous.png", output);
+                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("marvelous.png", output).WithReply(ctx.Message.Id));
             }
         }
 
@@ -997,7 +1005,7 @@ namespace KekBot.Commands {
             }
 
             using var result = await GenerateGru(ctx, stripped1, stripped2, stripped3, egg, hyper);
-            await ctx.RespondWithFileAsync("masterplan.png", result);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("masterplan.png", result).WithReply(ctx.Message.Id));
         }
 
         [Command("gru"), Priority(1)]
@@ -1026,7 +1034,7 @@ namespace KekBot.Commands {
             }
 
             using var result = await GenerateGru(ctx, stripped1, stripped2, stripped2, egg, hyper);
-            await ctx.RespondWithFileAsync("masterplan.png", result);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("masterplan.png", result).WithReply(ctx.Message.Id));
         }
 
         [Command("gru"), Priority(0)]
@@ -1046,7 +1054,7 @@ namespace KekBot.Commands {
             }
 
             using var result = await GenerateGru(ctx, stripped, stripped, stripped, egg, hyper);
-            await ctx.RespondWithFileAsync("masterplan.png", result);
+            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("masterplan.png", result).WithReply(ctx.Message.Id));
         }
 
         async Task<MemoryStream> GenerateGru(CommandContext ctx, string i1, string i2, string i3, bool egg, bool hyper) {

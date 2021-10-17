@@ -8,6 +8,7 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using KekBot.Attributes;
 using KekBot.Lib;
 using KekBot.Menu;
@@ -132,7 +133,8 @@ namespace KekBot.Commands {
         private IEnumerable<DiscordEmbed> GetCategoryPages(CommandContext ctx, Category cat) {
             var prefix = Bot.GetPrefix(ctx.Guild);
             var cmds = CommandInfo
-                .Where(c => c.Category == cat)
+                //Sort categories by their command, and make sure to only select commands that AREN'T subcommands.
+                .Where(c => c.Category == cat && c.Cmd?.Parent == null)
                 .OrderBy(c => c.Name)
                 .Distinct()
                 .ToList();
