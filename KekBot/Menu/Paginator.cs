@@ -27,8 +27,9 @@ namespace KekBot.Menu {
             var buttons = m.Components.ToList()[0].Components.ToList();
             var disabledBtns = new List<DiscordButtonComponent>();
 
-            foreach (DiscordButtonComponent btn in buttons) {
-                btn.Disabled = true;
+            foreach (DiscordButtonComponent btn in buttons)
+            {
+                btn.Disable();
                 disabledBtns.Add(btn);
             }
             
