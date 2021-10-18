@@ -1,18 +1,21 @@
-﻿using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Attributes;
+﻿using DSharpPlus;
+using DSharpPlus.Entities;
+using DSharpPlus.SlashCommands;
 using System.Threading.Tasks;
 
 namespace KekBot.Commands {
-    public class PingCommand : BaseCommandModule {
+    public class PingCommand : ApplicationCommandModule {
 
-        [Command("ping"), Description("Returns with the bot's ping."), Aliases("pong")]
-        async Task Ping(CommandContext ctx) {
-            var msg = await ctx.RespondAsync("Pinging...");
-            var ping = msg.CreationTimestamp - ctx.Message.CreationTimestamp;
-            var heartbeat = ctx.Client.Ping;
+        [SlashCommand("ping", "Returns with the bot's ping.")]
+        async Task Ping(InteractionContext ctx)
+        {
+            await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource,
+                new DiscordInteractionResponseBuilder().WithContent("Pinging..."));
+            var msg = await ctx.GetOriginalResponseAsync();
+            var ping = msg.CreationTimestamp - ctx.Interaction.CreationTimestamp;
             await msg.ModifyAsync(
                 $"🏓 Pong! `{ping.TotalMilliseconds}ms`\n" +
-                $"💓 Heartbeat: `{heartbeat}ms`"
+                $"💓 Heartbeat: `{ctx.Client.Ping}ms`"
             );
         }
 
