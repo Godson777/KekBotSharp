@@ -9,7 +9,7 @@ namespace KekBot.Commands {
         [SlashCommand("ping", "Returns with the bot's ping.")]
         async Task Ping(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource);
+            await ctx.SendThinking();
             var msg = await ctx.GetOriginalResponseAsync();
             var ping = msg.CreationTimestamp - ctx.Interaction.CreationTimestamp;
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent(
