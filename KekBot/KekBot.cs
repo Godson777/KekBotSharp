@@ -25,6 +25,7 @@ using System.Collections;
 using DSharpPlus.Interactivity.Extensions;
 using Microsoft.Extensions.Logging;
 using DSharpPlus.Exceptions;
+using DSharpPlus.SlashCommands;
 
 namespace KekBot {
     /// <summary>
@@ -144,11 +145,15 @@ namespace KekBot {
             CommandsNext.RegisterConverter(new FlagsConverter());
 
             CommandsNext.RegisterCommands<TestCommand>();
-            CommandsNext.RegisterCommands<PingCommand>();
             CommandsNext.RegisterCommands<OwnerCommands>();
             CommandsNext.RegisterCommands<HelpCommand>();
             CommandsNext.RegisterCommands<FunCommands>();
             CommandsNext.RegisterCommands<MemeCommands>();
+            
+            // Put your guild ID here if you wanna test
+            ulong? testGuildId = null;
+            var slash = Discord.UseSlashCommands();
+            slash.RegisterCommands<PingCommand>(testGuildId);
 
             if (config.WeebToken == null) {
                 Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] NOT registering weeb commands because no token was found >:(", DateTime.Now);
