@@ -17,7 +17,6 @@ using KekBot.Lib;
 using KekBot.Utils;
 
 namespace KekBot.Commands {
-    [SlashCommandGroup("weeb", "Powered by Weeb.sh!")]
     class WeebCommands : ApplicationCommandModule {
 
         private const string FlagArgName = "flags";
@@ -25,7 +24,7 @@ namespace KekBot.Commands {
             "Advanced options. Ask us if you really want to know how to use them.";
 
         [SlashCommandGroup("interact", "Interact with someone else")]
-        class MentionWeebs : ApplicationCommandModule
+        class WeebInteract : ApplicationCommandModule
         {
             private const string UserArgDescription = "User to interact with";
             
@@ -104,8 +103,8 @@ namespace KekBot.Commands {
                 await Base.FetchAndPostWithMention(ctx, "tickle", "{0} was ticked to death by {1}!", (DiscordMember)user, flagsStr);
         }
 
-        [SlashCommandGroup("solo", "Things performed alone")]
-        class SoloWeebs : ApplicationCommandModule
+        [SlashCommandGroup("react", "Things performed alone")]
+        class WeebReact : ApplicationCommandModule
         {
             public WeebCommandsBase Base { private get; set; }
 
@@ -212,11 +211,6 @@ namespace KekBot.Commands {
                 [Option(FlagArgName, FlagArgDescription)] string flagsStr = "") =>
                 await Base.FetchAndPost(ctx, "wag", ":3", flagsStr);
         }
-        
-        /*
-         * @todo Move `discord` command from meme category to weeb category?
-         * @body Either way, it's just a weeb.sh command but with a different category. Dunno what to do about this one.
-         */
 
     }
 }
