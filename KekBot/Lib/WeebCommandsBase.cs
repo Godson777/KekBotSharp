@@ -46,7 +46,9 @@ namespace KekBot.Lib
                 ? (flags.ParseEnum<NsfwSearch>("nsfw") ?? NsfwSearch.True)
                 : NsfwSearch.False;
 
-            var builder = new DiscordEmbedBuilder();
+            string content;
+            var builder = new DiscordEmbedBuilder()
+                .WithTitle(char.ToUpperInvariant(type[0]) + type[1..]);
             RandomData? image = await Client.GetRandomAsync(
                 type: type,
                 tags: requestTags,
@@ -54,15 +56,17 @@ namespace KekBot.Lib
                 hidden: requestHidden,
                 nsfw: requestNsfw
             );
-            if (image == null) {
-                builder.WithTitle(FailureMsg);
+            if (image == null)
+            {
+                content = FailureMsg;
 
-                if (requestTags.Length > 0 || requestHidden) {
+                if (requestTags.Length > 0 || requestHidden)
                     builder.WithDescription(FailureMsgSearch);
-                } else if (requestNsfw == NsfwSearch.Only) {
+                else if (requestNsfw == NsfwSearch.Only)
                     builder.WithDescription(FailureMsgNsfw);
-                }
-            } else {
+            }
+            else
+            {
                 if (!ctx.Channel.IsNSFW && image.Nsfw)
                 {
                     await ctx.ReplyBasicAsync(
@@ -70,11 +74,14 @@ namespace KekBot.Lib
                     return;
                 }
 
-                builder.WithTitle(msg).WithImageUrl(new Uri(image.Url));
+                content = msg;
+                builder.WithImageUrl(new Uri(image.Url));
 
                 if (flags.ParseBool("debug") ?? false) {
-                    var tagStr = Util.Join(image.Tags, tag => {
-                        var extraInfo = string.Join("; ", new string[] {
+                    var tagStr = Util.Join(image.Tags, tag =>
+                    {
+                        var extraInfo = string.Join("; ", new[]
+                        {
                             tag.Hidden ? "hidden" : "",
                             string.IsNullOrEmpty(tag.User) ? "" : $"user {tag.User}",
                         }.Where(s => s.Length > 0));
@@ -93,8 +100,8 @@ namespace KekBot.Lib
                 }
             }
             builder.WithFooter(EmbedFooter);
-            
-            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(builder.Build()));
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent(content).AddEmbed(builder.Build()));
         }
         
         public async Task FetchAndPostWithMention(
@@ -106,7 +113,7 @@ namespace KekBot.Lib
         ) => await FetchAndPost(
             ctx,
             type: type, 
-            msg: string.Format(msg, user.DisplayName, ctx.Interaction.User.GetName()),
+            msg: string.Format(msg, user.Mention, ctx.Interaction.User.Mention),
             flagsStr: flagsStr
         );
     }
