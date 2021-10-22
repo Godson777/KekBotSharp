@@ -22,6 +22,7 @@ using KekBot.Lib;
 using KekBot.Services;
 using KekBot.Utils;
 using System.Collections;
+using System.Reflection;
 using DSharpPlus.Interactivity.Extensions;
 using Microsoft.Extensions.Logging;
 using DSharpPlus.Exceptions;
@@ -121,7 +122,6 @@ namespace KekBot {
             Services = new ServiceCollection()
                 .AddSingleton(CommandInfos)
                 .AddSingleton(FakeCommands)
-                .AddSingleton(new WeebCommands.WeebCmdsCtorArgs(botName: Name, botVersion: Version, weebToken: config.WeebToken))
                 .AddSingleton<MusicService>()
                 .AddSingleton(new LavalinkService(this.Discord))
                 .AddSingleton(this)
@@ -144,7 +144,6 @@ namespace KekBot {
             CommandsNext.RegisterUserFriendlyTypeName<ChoicesList>("string[]");
             CommandsNext.RegisterConverter(new FlagsConverter());
 
-            CommandsNext.RegisterCommands<TestCommand>();
             CommandsNext.RegisterCommands<OwnerCommands>();
             CommandsNext.RegisterCommands<HelpCommand>();
             CommandsNext.RegisterCommands<FunCommands>();
@@ -152,14 +151,19 @@ namespace KekBot {
             
             // Put your guild ID here if you wanna test
             ulong? testGuildId = null;
-            var slash = Discord.UseSlashCommands();
+            var slash = Discord.UseSlashCommands(new SlashCommandsConfiguration()
+            {
+                Services = new ServiceCollection()
+                    .AddSingleton(new WeebCommandsBase(Name, Version, config.WeebToken))
+                    .BuildServiceProvider()
+            });
             slash.RegisterCommands<PingCommand>(testGuildId);
 
             if (config.WeebToken == null) {
                 Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] NOT registering weeb commands because no token was found >:(", DateTime.Now);
             } else {
                 Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] Initializing weeb commands", DateTime.Now);
-                CommandsNext.RegisterCommands<WeebCommands>();
+                slash.RegisterCommands<WeebCommands>(testGuildId);
             }
 
             var modules = CommandsNext.RegisteredCommands.Values
@@ -167,6 +171,7 @@ namespace KekBot {
                 .OfType<DSharpPlus.CommandsNext.Entities.SingletonCommandModule>()
                 .Select(mod => mod.Instance)
                 .Distinct();
+            // Note: this will NOT work for slash commands.
             foreach (var module in modules) {
                 if (module is INeedsInitialized initer) {
                     ThingsToWaitFor.Add(initer.Initialize());

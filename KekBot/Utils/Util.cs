@@ -105,10 +105,10 @@ namespace KekBot.Utils {
         internal static int FastIndexOfEnd(this string s, string value, int startIndex = 0) =>
             s.IndexOfEnd(value, startIndex, StringComparison.Ordinal);
 
-        internal static string AuthorName(this DiscordMessage msg) => msg.Author switch {
-            DiscordMember m => m.DisplayName,
-            DiscordUser u => u.Username,
-        };
+        internal static string GetName(this DiscordUser user) =>
+            user is DiscordMember m ? m.DisplayName : user.Username;
+
+        internal static string AuthorName(this DiscordMessage msg) => msg.Author.GetName();
 
         internal static string GetRawArgString(this CommandContext ctx, string cmdName) =>
             ctx.Message.GetRawArgString(ctx.Prefix, cmdName);
