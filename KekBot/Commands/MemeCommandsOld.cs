@@ -22,6 +22,8 @@ namespace KekBot.Commands {
     class MemeCommands : ApplicationCommandModule
     {
         
+        private readonly Randumb Random = Randumb.Instance;
+        
         [SlashCommandGroup("delet", "Delet a user from existence."), Category(Category.Meme)]
         class DeletCommands : ApplicationCommandModule
         {
@@ -92,6 +94,45 @@ namespace KekBot.Commands {
             }
         }
         
+        [SlashCommand("triggered", "I'm T R I G G E R E D"), Category(Category.Meme)]
+        async Task Triggered(InteractionContext ctx,
+            [Option("user", "The user to generate the image from. (If none given, it uses you.)")] DiscordUser? user = null)
+        {
+            await ctx.SendThinking();
+
+            var m = (DiscordMember)(user ?? ctx.Member);
+
+            using var client = new WebClient();
+            await using var avaStream = await client.OpenReadTaskAsync(m.AvatarUrl);
+            using var ava = new MagickImage(avaStream);
+            ava.Resize(500, 500);
+            using var canvas = new MagickImage(MagickColor.FromRgba(0, 0, 0, 0), 500, 500);
+            canvas.Format = MagickFormat.Gif;
+            using var triggered = new MagickImage("Resource/Files/memegen/triggered.png");
+            using var overlay = new MagickImage("Resource/Files/memegen/triggered_overlay.png");
+            using var gif = new MagickImageCollection();
+            for (var i = 0; i < 10; i++) {
+                gif.Add(canvas.Clone());
+                gif[i].AnimationDelay = 3;
+                gif[i].Composite(ava, Random.Next(-30, 30), Random.Next(-20, 20), CompositeOperator.SrcOver);
+                gif[i].Composite(triggered, Random.Next(-30, 30), 327 + Random.Next(-20, 20), CompositeOperator.SrcOver);
+                gif[i].Composite(overlay, CompositeOperator.SrcOver);
+                gif[i].GifDisposeMethod = GifDisposeMethod.Previous;
+            }
+
+            var settings = new QuantizeSettings
+            {
+                Colors = 256
+            };
+            gif.Quantize(settings);
+            gif.Coalesce();
+
+            await using var stream = new MemoryStream(gif.ToByteArray());
+
+            await ctx.EditResponseAsync(
+                new DiscordWebhookBuilder().AddFile("triggered.gif", stream));
+        }
+        
     }
     
     public class MemeCommandsOld : BaseCommandModule {
@@ -133,43 +174,6 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
                 await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("test.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("triggered"), Description("I'm T R I G G E R E D"), Category(Category.Meme)]
-        async Task Triggered(CommandContext ctx, [RemainingText, Description("The user to generate the image from. (If none given, it uses you.)")] DiscordMember? Member = null) {
-            await ctx.TriggerTypingAsync();
-
-            var m = Member ?? ctx.Member;
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(m.AvatarUrl);
-                using var ava = new MagickImage(_);
-                ava.Resize(500, 500);
-                using var canvas = new MagickImage(MagickColor.FromRgba(0, 0, 0, 0), 500, 500);
-                canvas.Format = MagickFormat.Gif;
-                using var triggered = new MagickImage("Resource/Files/memegen/triggered.png");
-                using var overlay = new MagickImage("Resource/Files/memegen/triggered_overlay.png");
-                using (var gif = new MagickImageCollection()) {
-                    for (int i = 0; i < 10; i++) {
-                        gif.Add(canvas.Clone());
-                        gif[i].AnimationDelay = 3;
-                        gif[i].Composite(ava, Random.Next(-30, 30), Random.Next(-20, 20), CompositeOperator.SrcOver);
-                        gif[i].Composite(triggered, Random.Next(-30, 30), 327 + Random.Next(-20, 20), CompositeOperator.SrcOver);
-                        gif[i].Composite(overlay, CompositeOperator.SrcOver);
-                        gif[i].GifDisposeMethod = GifDisposeMethod.Previous;
-                    }
-
-                    var settings = new QuantizeSettings {
-                        Colors = 256
-                    };
-                    gif.Quantize(settings);
-                    gif.Coalesce();
-
-                    using var stream = new MemoryStream(gif.ToByteArray());
-
-                    await ctx.RespondAsync(new DiscordMessageBuilder().WithReply(ctx.Message.Id).WithFile("triggered.gif", stream));
-                }
             }
         }
 
