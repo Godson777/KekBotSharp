@@ -14,10 +14,87 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using System.Linq;
 using DSharpPlus.Lavalink;
+using DSharpPlus.SlashCommands;
+using KekBot.Lib;
 using Microsoft.Extensions.Logging;
 
 namespace KekBot.Commands {
-    public class MemeCommands : BaseCommandModule {
+    class MemeCommands : ApplicationCommandModule
+    {
+        
+        [SlashCommandGroup("delet", "Delet a user from existence."), Category(Category.Meme)]
+        class DeletCommands : ApplicationCommandModule
+        {
+            public WeebCommandsBase WeebBase { private get; set; }
+            
+            [SlashCommand("this", "What can I say except delet this?")]
+            async Task DeletThis(InteractionContext ctx)
+            {
+                await WeebBase.FetchAndPost(ctx, "delet_this", "", "");
+            }
+            
+            [SlashCommand("user", "Delet a user from existence.")]
+            async Task DeletUser(InteractionContext ctx,
+                [Option("user", "The user to generate the image from.")] DiscordUser user)
+            {
+                await ctx.SendThinking();
+
+                var m = (DiscordMember)user;
+
+                using var client = new WebClient();
+                await using var stream = await client.OpenReadTaskAsync(m.AvatarUrl);
+                using var ava = new MagickImage(stream);
+                using var template = new MagickImage("Resource/Files/memegen/DELET_template.png");
+
+                ava.Resize(42, 42);
+                template.Composite(ava, 36, 114, CompositeOperator.DstOver);
+
+                var textSettings = new MagickReadSettings
+                {
+                    Font = "Whitney-Book",
+                    FontPointsize = 16,
+                    TextGravity = Gravity.Northwest,
+                    FillColor = new MagickColor(m.Color.ToString()),
+                    BackgroundColor = MagickColors.Transparent,
+                    Width = 279,
+                    Height = 25
+                };
+
+                using var text = new MagickImage($"caption:{m.DisplayName}", textSettings);
+
+                template.Composite(text, 93, 113, CompositeOperator.SrcOver);
+
+                //Pull random quote from text file for delet command.
+                try
+                {
+                    var quotes = await File.ReadAllLinesAsync("Resource/Files/memegen/delet_quotes.txt");
+                    var quote = quotes.RandomElement();
+
+                    textSettings.FillColor = MagickColors.White;
+                    textSettings.Width = 315;
+                    textSettings.Height = 25;
+                    textSettings.TextGravity = Gravity.Forget;
+
+                    using var drawnQuote = new MagickImage($"caption:{quote}", textSettings);
+
+                    template.Composite(drawnQuote, 93, 133, CompositeOperator.SrcOver);
+                    GC.Collect();
+                }
+                catch (Exception)
+                {
+                    ctx.Client.Logger.Log(LogLevel.Error, KekBot.LOGTAG, "Could not generate a quote for the delet command. Field was left blank.", DateTime.Now);
+                }
+
+                await using var output = new MemoryStream(template.ToByteArray());
+
+                await ctx.EditResponseAsync(
+                    new DiscordWebhookBuilder().AddFile("delet.png", output));
+            }
+        }
+        
+    }
+    
+    public class MemeCommandsOld : BaseCommandModule {
 
         private readonly Randumb Random = Randumb.Instance;
 
@@ -715,66 +792,6 @@ namespace KekBot.Commands {
                 using var output = new MemoryStream(template.ToByteArray());
 
                 await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("byemom.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("delet"), Description("Delet a user from existance."), Category(Category.Meme)]
-        async Task Delet(CommandContext ctx, [Required, RemainingText, Description("The user to generate the image from. (If none given, it uses you.)")] String Member) {
-            await ctx.TriggerTypingAsync();
-
-            if (!String.IsNullOrWhiteSpace(Member) && Member.Equals("this")) {
-                // TODO: gonna need hutch to help port the "delet this" easter egg (which used weeb.sh to make that happen) 
-                return;
-            }
-
-            //If we don't include `?? ""`, an error will be thrown in console if no input is given.
-            var target = await Util.ConvertArgAsync<DiscordMember>(Member ?? "", ctx);
-
-            var m = target ?? ctx.Member;
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(m.AvatarUrl);
-                using var ava = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/DELET_template.png");
-
-                ava.Resize(42, 42);
-                template.Composite(ava, 36, 114, CompositeOperator.DstOver);
-
-                var textSettings = new MagickReadSettings() {
-                    Font = "Whitney-Book",
-                    FontPointsize = 16,
-                    TextGravity = Gravity.Northwest,
-                    FillColor = new MagickColor(m.Color.ToString()),
-                    BackgroundColor = MagickColors.Transparent,
-                    Width = 279,
-                    Height = 25
-                };
-
-                using var text = new MagickImage($"caption:{m.DisplayName}", textSettings);
-
-                template.Composite(text, 93, 113, CompositeOperator.SrcOver);
-
-                //Pull random quote from text file for delet command.
-                try {
-                    var quotes = await File.ReadAllLinesAsync("Resource/Files/memegen/delet_quotes.txt");
-                    var quote = quotes.RandomElement();
-
-                    textSettings.FillColor = MagickColors.White;
-                    textSettings.Width = 315;
-                    textSettings.Height = 25;
-                    textSettings.TextGravity = Gravity.Forget;
-
-                    using var drawnQuote = new MagickImage($"caption:{quote}", textSettings);
-
-                    template.Composite(drawnQuote, 93, 133, CompositeOperator.SrcOver);
-                    GC.Collect();
-                } catch (Exception e) {
-                    ctx.Client.Logger.Log(LogLevel.Error, KekBot.LOGTAG, "Could not generate a quote for the delet command. Field was left blank.", DateTime.Now);
-                }
-
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("delet.png", output).WithReply(ctx.Message.Id));
             }
         }
 
