@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
@@ -37,9 +38,82 @@ namespace KekBot.Commands {
         private const string AvatarArgDescription =
             "Whether to use their avatar on this server (the default), or their global one.";
 
+        private const string ImageArgDescription =
+            "An image link. If none given, KekBot will search message history for an image to use.";
+
         private const string AvatarFailed = "Error while loading avatar.";
 
         private readonly Randumb Random = Randumb.Instance;
+        
+        private async Task<Uri?> HuntForImage(InteractionContext ctx) {
+            foreach (var message in await ctx.Channel.GetMessagesAsync())
+            {
+                //Let's check attachments first.
+                if (message.Attachments.Count > 0)
+                {
+                    var attach = message.Attachments[0];
+                    //Check if actually an image
+                    if (attach.IsImage()) return new Uri(attach.Url);
+                    //No attachments :(
+                } else {
+                    //Next, we're checking embeds.
+                    if (message.Embeds.Count > 0) {
+                        var embed = message.Embeds[0];
+                        //Embeds can have two image fields. The image, and thumbnail fields. We're checking the image field first.
+                        if (embed.Image != null) return embed.Image.Url.ToUri();
+                        //There was no image. Maybe there's a thumbnail we can use?
+                        if (embed.Thumbnail != null) return embed.Thumbnail.Url.ToUri();
+                    }
+                    
+                    //There weren't any embeds. Last resort. Let's see if there's a URL we can use.
+                    if (message.Content == null) continue;
+                    
+                    try
+                    {
+                        return new Uri(message.Content);
+                    }
+                    catch (FormatException)
+                    { }
+                }
+            }
+            
+            return null;
+        }
+        
+        [SlashCommand("brave", "I'm a brave boy!"), Category(Category.Meme)]
+        async Task Brave(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+
+            Uri? uri = null;
+            if (uriString != null) uri = new Uri(uriString);
+            //Checks if "Image" was null.
+            if (uri == null) {
+                // Slash commands don't support attachments yet
+                // if (ctx.Attachments.Count > 0)
+                //     uri = new Uri(ctx.Message.Attachments[0].Url);
+                uri = await HuntForImage(ctx);
+            }
+            //Checks if the search failed.
+            if (uri == null) {
+                await ctx.EditBasicAsync("No image found.");
+                return;
+            }
+
+            using var client = new WebClient();
+            using var template = new MagickImage("Resource/Files/memegen/brave.jpg");
+            await using var imgStream = await client.OpenReadTaskAsync(uri);
+            using var image = new MagickImage(imgStream);
+
+            image.Resize(892, 1108);
+            image.BackgroundColor = MagickColors.Transparent;
+            image.Extent(892, 1108, Gravity.Center);
+            template.Composite(image, 0, 1112, CompositeOperator.SrcOver);
+
+            await using var output = new MemoryStream(template.ToByteArray());
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("test.png", output));
+        }
 
         [SlashCommandGroup("delet", "Delet a user from existence."), Category(Category.Meme)]
         class DeletCommands : ApplicationCommandModule
@@ -215,44 +289,6 @@ namespace KekBot.Commands {
     public class MemeCommandsOld : BaseCommandModule {
 
         private readonly Randumb Random = Randumb.Instance;
-
-        [Command("brave"), Description("I'm a brave boy!"), Category(Category.Meme), Priority(0)]
-        async Task Brave(
-            CommandContext ctx,
-            [RemainingText,
-            Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var template = new MagickImage("Resource/Files/memegen/brave.jpg");
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-
-                image.Resize(892, 1108);
-                image.BackgroundColor = MagickColors.Transparent;
-                image.Extent(892, 1108, Gravity.Center);
-                template.Composite(image, 0, 1112, CompositeOperator.SrcOver);
-
-                using var output = new MemoryStream(template.ToByteArray());
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("test.png", output).WithReply(ctx.Message.Id));
-            }
-        }
 
         [Command("garage"), Description("Show your friends what's in your garage!"), Category(Category.Meme)]
         async Task Garage(CommandContext ctx,
