@@ -47,5 +47,13 @@ namespace KekBot {
         /// <returns></returns>
         internal static async Task ReplyBasicAsync(this InteractionContext ctx, string content, bool ephemeral = false) =>
             await ctx.ReplyAsync(new DiscordInteractionResponseBuilder().WithContent(content).AsEphemeral(ephemeral));
+
+        /// <summary>
+        /// Edits the interaction response.
+        /// </summary>
+        /// <param name="ctx">The interaction context</param>
+        /// <param name="content">The new content of the response</param>
+        internal static async Task EditBasicAsync(this InteractionContext ctx, string content) =>
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent(content));
     }
 }

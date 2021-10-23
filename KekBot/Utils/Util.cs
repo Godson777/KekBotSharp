@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
+using KekBot.Commands;
 
 namespace KekBot.Utils {
     static class Util {
@@ -224,5 +227,40 @@ namespace KekBot.Utils {
             return a.Width > 0 && a.Height > 0;
         }
 
+        /// <summary>
+        /// Opens a readable stream containing the member's avatar.
+        /// </summary>
+        /// <param name="m"></param>
+        /// <param name="preference"></param>
+        /// <returns></returns>
+        public static async Task<Stream?> OpenReadAvatarAsync(this DiscordMember m,
+            AvatarPreference preference)
+        {
+            using var client = new WebClient();
+            
+            if (preference == AvatarPreference.Guild)
+            {
+                try
+                {
+                    return await client.OpenReadTaskAsync(m.GuildAvatarUrl);
+                }
+                catch (WebException)
+                { }
+            }
+            else
+            {
+                Assert(preference == AvatarPreference.Global,
+                    $"unknown {nameof(AvatarPreference)}: '{preference}'");
+            }
+
+            try
+            {
+                return await client.OpenReadTaskAsync(m.AvatarUrl);
+            }
+            catch (WebException)
+            { }
+
+            return null;
+        }
     }
 }

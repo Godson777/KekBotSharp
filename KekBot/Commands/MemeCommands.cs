@@ -19,11 +19,28 @@ using KekBot.Lib;
 using Microsoft.Extensions.Logging;
 
 namespace KekBot.Commands {
+    public enum AvatarPreference
+    {
+        [ChoiceName("prefer server avatar")]
+        Guild = 0, // default
+        [ChoiceName("use global avatar")]
+        Global,
+    }
+    
     class MemeCommands : ApplicationCommandModule
     {
-        
+
+        private const string UserArgDescription =
+            "The user to generate the image from. (If none given, it uses you.)";
+
+        private const string AvatarArgName = "avatar-preference";
+        private const string AvatarArgDescription =
+            "Whether to use their avatar on this server (the default), or their global one.";
+
+        private const string AvatarFailed = "Error while loading avatar.";
+
         private readonly Randumb Random = Randumb.Instance;
-        
+
         [SlashCommandGroup("delet", "Delet a user from existence."), Category(Category.Meme)]
         class DeletCommands : ApplicationCommandModule
         {
@@ -37,15 +54,21 @@ namespace KekBot.Commands {
             
             [SlashCommand("user", "Delet a user from existence.")]
             async Task DeletUser(InteractionContext ctx,
-                [Option("user", "The user to generate the image from.")] DiscordUser user)
+                [Option("user", UserArgDescription)] DiscordUser? user = null,
+                [Option(AvatarArgName, AvatarArgDescription)] AvatarPreference avaPref = default)
             {
                 await ctx.SendThinking();
 
-                var m = (DiscordMember)user;
+                var m = (DiscordMember)(user ?? ctx.Member);
 
                 using var client = new WebClient();
-                await using var stream = await client.OpenReadTaskAsync(m.AvatarUrl);
-                using var ava = new MagickImage(stream);
+                await using var avaStream = await m.OpenReadAvatarAsync(avaPref);
+                if (avaStream == null)
+                {
+                    await ctx.EditBasicAsync(AvatarFailed);
+                    return;
+                }
+                using var ava = new MagickImage(avaStream);
                 using var template = new MagickImage("Resource/Files/memegen/DELET_template.png");
 
                 ava.Resize(42, 42);
@@ -93,17 +116,71 @@ namespace KekBot.Commands {
                     new DiscordWebhookBuilder().AddFile("delet.png", output));
             }
         }
+
+        [SlashCommand("doubt", "Displays your doubt."), Category(Category.Meme)]
+        async Task Doubt(InteractionContext ctx,
+            [Option(AvatarArgName, AvatarArgDescription)] AvatarPreference avaPref = default)
+        {
+            await ctx.SendThinking();
+
+            using var client = new WebClient();
+            await using var avaStream = await ctx.Member.OpenReadAvatarAsync(avaPref);
+            if (avaStream == null)
+            {
+                await ctx.EditBasicAsync(AvatarFailed);
+                return;
+            }
+            using var ava = new MagickImage(avaStream);
+            using var template = new MagickImage("Resource/Files/memegen/doubt.png");
+            ava.Resize(709, 709);
+            template.Composite(ava, 0, 0, CompositeOperator.SrcOver);
+
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("doubt.png", output));
+        }
         
-        [SlashCommand("triggered", "I'm T R I G G E R E D"), Category(Category.Meme)]
-        async Task Triggered(InteractionContext ctx,
-            [Option("user", "The user to generate the image from. (If none given, it uses you.)")] DiscordUser? user = null)
+        [SlashCommand("erase", "For really big mistakes."), Category(Category.Meme)]
+        async Task Erase(InteractionContext ctx,
+            [Option("user", UserArgDescription)] DiscordUser? user = null,
+            [Option(AvatarArgName, AvatarArgDescription)] AvatarPreference avaPref = default)
         {
             await ctx.SendThinking();
 
             var m = (DiscordMember)(user ?? ctx.Member);
 
             using var client = new WebClient();
-            await using var avaStream = await client.OpenReadTaskAsync(m.AvatarUrl);
+            await using var avaStream = await m.OpenReadAvatarAsync(avaPref);
+            if (avaStream == null)
+            {
+                await ctx.EditBasicAsync(AvatarFailed);
+                return;
+            }
+            using var ava = new MagickImage(avaStream);
+            using var template = new MagickImage("Resource/Files/memegen/mistake_template.png");
+            ava.Resize(270, 270);
+            template.Composite(ava, 368, 375, CompositeOperator.SrcOver);
+
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("erase.png", output));
+        }
+        
+        [SlashCommand("triggered", "I'm T R I G G E R E D"), Category(Category.Meme)]
+        async Task Triggered(InteractionContext ctx,
+            [Option("user", UserArgDescription)] DiscordUser? user = null,
+            [Option(AvatarArgName, AvatarArgDescription)] AvatarPreference avaPref = default)
+        {
+            await ctx.SendThinking();
+
+            var m = (DiscordMember)(user ?? ctx.Member);
+
+            await using var avaStream = await m.OpenReadAvatarAsync(avaPref);
+            if (avaStream == null)
+            {
+                await ctx.EditBasicAsync(AvatarFailed);
+                return;
+            }
             using var ava = new MagickImage(avaStream);
             ava.Resize(500, 500);
             using var canvas = new MagickImage(MagickColor.FromRgba(0, 0, 0, 0), 500, 500);
@@ -174,43 +251,6 @@ namespace KekBot.Commands {
 
                 using var output = new MemoryStream(template.ToByteArray());
                 await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("test.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("doubt"), Description("Displays your doubt."), Category(Category.Meme)]
-        async Task Doubt(CommandContext ctx) {
-            await ctx.TriggerTypingAsync();
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(ctx.Member.AvatarUrl);
-                using var ava = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/doubt.png");
-                ava.Resize(709, 709);
-                template.Composite(ava, 0, 0, CompositeOperator.SrcOver);
-
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithReply(ctx.Message.Id).WithFile("doubt.png", output));
-                
-            }
-        }
-
-        [Command("erase"), Description("For really big mistakes."), Category(Category.Meme)]
-        async Task Erase(CommandContext ctx, [Description("The user to generate the image from. (If none given, it uses you.)")] DiscordMember? Member = null) {
-            await ctx.TriggerTypingAsync();
-
-            var m = Member ?? ctx.Member;
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(m.AvatarUrl);
-                using var ava = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/mistake_template.png");
-                ava.Resize(270, 270);
-                template.Composite(ava, 368, 375, CompositeOperator.SrcOver);
-
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("erase.png", output).WithReply(ctx.Message.Id));
             }
         }
 

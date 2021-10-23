@@ -157,6 +157,12 @@ namespace KekBot {
                     .AddSingleton(new WeebCommandsBase(Name, Version, config.WeebToken))
                     .BuildServiceProvider()
             });
+            slash.SlashCommandErrored += (sender, args) =>
+            {
+                Console.WriteLine("Slash command error.");
+                Console.WriteLine(args.Exception);
+                return Task.CompletedTask;
+            };
             slash.RegisterCommands<PingCommand>(testGuildId);
             slash.RegisterCommands<MemeCommands>(testGuildId);
 
