@@ -45,7 +45,7 @@ namespace KekBot.Commands {
 
         private readonly Randumb Random = Randumb.Instance;
         
-        private async Task<Uri?> HuntForImage(InteractionContext ctx) {
+        private static async Task<Uri?> HuntForImage(InteractionContext ctx) {
             foreach (var message in await ctx.Channel.GetMessagesAsync())
             {
                 //Let's check attachments first.
