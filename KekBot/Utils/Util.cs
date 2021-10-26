@@ -230,14 +230,13 @@ namespace KekBot.Utils {
         /// <summary>
         /// Opens a readable stream containing the member's avatar.
         /// </summary>
-        /// <param name="m"></param>
-        /// <param name="preference"></param>
         /// <returns></returns>
         public static async Task<Stream?> OpenReadAvatarAsync(this DiscordMember m,
-            AvatarPreference preference)
+            AvatarPreference preference,
+            WebClient? withClient = null)
         {
-            using var client = new WebClient();
-            
+            using var client = withClient ?? new WebClient();
+
             if (preference == AvatarPreference.Guild)
             {
                 try
