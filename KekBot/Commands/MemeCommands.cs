@@ -113,6 +113,19 @@ namespace KekBot.Commands {
             return new MagickImage(imgStream);
         }
         
+        // todo: figure out what this does
+        private static string PrepText(string text) {
+            var charLimit = 12;
+            var sb = new StringBuilder();
+            var split = text.Split(" ");
+            for (var i = 0; i < split.Length; i++) {
+                if (split[i].Length > charLimit) {
+                    for (var ii = 0; ii < split[i].Length; ii += charLimit) sb.Append(split[i].Substring(ii, Math.Min(charLimit, split[i].Length - ii)) + " ");
+                } else sb.Append(split[i] + " ");
+            }
+            return sb.ToString();
+        }
+        
         [SlashCommand("brave", "I'm a brave boy!"), Category(Category.Meme)]
         async Task Brave(InteractionContext ctx,
             [Option("image", ImageArgDescription)] string? uriString = null)
@@ -135,6 +148,116 @@ namespace KekBot.Commands {
 
             await using var output = new MemoryStream(template.ToByteArray());
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("brave.png", output));
+        }
+        
+        [SlashCommand("byemom", "OK BYE MOM"), Category(Category.Meme)]
+        async Task ByeMom(InteractionContext ctx,
+            [Option("text", "The text that'll be used in the meme. (Max 50 chars)")] string text,
+            [Option(AvatarArgName, AvatarArgDescription)] AvatarPreference avaPref = default)
+        {
+            if (text.Length > 50) {
+                await ctx.ReplyBasicAsync("You cannot have more than 50 characters in this command.");
+                return;
+            }
+
+            await ctx.SendThinking();
+
+            await using var avaStream = await ctx.Member.OpenReadAvatarAsync(avaPref);
+            if (avaStream == null)
+            {
+                await ctx.EditBasicAsync(AvatarFailed);
+                return;
+            }
+            
+            using var ava = new MagickImage(avaStream);
+            using var clone = ava.Clone();
+            using var template = new MagickImage("Resource/Files/memegen/byemom_template.png");
+            using var bg = new MagickImage(MagickColors.White, 128, 128);
+
+            var textSettings = new MagickReadSettings
+            {
+                Font = "Ariel",
+                TextGravity = Gravity.West,
+                BackgroundColor = MagickColors.Transparent,
+                Width = 388,
+                Height = 28
+            };
+            using var textImg = new MagickImage($"caption:{text.Replace("\\", "\\\\")}", textSettings);
+            textImg.Rotate(-25);
+
+            ava.Resize(80, 80);
+            clone.Resize(128, 128);
+            template.Composite(bg, 73, 338, CompositeOperator.SrcOver);
+            template.Composite(clone, 73, 338, CompositeOperator.SrcOver);
+            bg.Resize(80, 80);
+            template.Composite(bg, 523, 12, CompositeOperator.SrcOver);
+            template.Composite(ava, 523, 12, CompositeOperator.SrcOver);
+            template.Composite(textImg, 345, 426, CompositeOperator.SrcOver);
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("byemom.png", output));
+        }
+
+        [SlashCommandGroup("doggo", "Doggo displays your text/image on his board!"), Category(Category.Meme)]
+        class DoggoCommands : ApplicationCommandModule
+        {
+            [SlashCommand("image", "Doggo displays your image on his board!")]
+            async Task DoggoImage(InteractionContext ctx,
+                [Option("image", ImageArgDescription)] string? uriString = null)
+            {
+                await ctx.SendThinking();
+
+                using var image = await GetImageArg(ctx, uriString);
+                if (image == null)
+                {
+                    await ctx.EditBasicAsync(ImageNotFound);
+                    return;
+                }
+
+                image.Resize(376, 299);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(376, 299, Gravity.Center);
+
+                await Base(ctx, image);
+            }
+            
+            [SlashCommand("text", "Doggo displays your text on his board!")]
+            async Task DoggoText(InteractionContext ctx,
+                [Option("text", "The text that'll be used in the meme.")] string text)
+            {
+                await ctx.SendThinking();
+
+                var textSettings = new MagickReadSettings
+                {
+                    Font = "Calibri-Bold",
+                    TextGravity = Gravity.Center,
+                    FillColor = MagickColors.Black,
+                    BackgroundColor = MagickColors.Transparent,
+                    Width = 376,
+                    Height = 299
+                };
+
+                using var image =
+                    new MagickImage($"caption:{PrepText(text).Replace("\\", "\\\\")}",
+                        textSettings);
+
+                await Base(ctx, image);
+            }
+
+            /// <summary>
+            /// You <em>must</em> send a deferred response before calling this.
+            /// </summary>
+            /// <param name="ctx">Slash command context</param>
+            /// <param name="image">Image to put on the template</param>
+            private async Task Base(InteractionContext ctx, MagickImage image)
+            {
+                using var template = new MagickImage("Resource/Files/memegen/doggo.jpg");
+                template.Composite(image, 135, 57, CompositeOperator.SrcOver);
+                await using var output = new MemoryStream(template.ToByteArray());
+
+                await ctx.EditResponseAsync(
+                    new DiscordWebhookBuilder().AddFile("doggo.png", output));
+            }
         }
 
         [SlashCommandGroup("delet", "Delet a user from existence."), Category(Category.Meme)]
@@ -354,14 +477,14 @@ namespace KekBot.Commands {
         
         [SlashCommand("johnny", "HEREEEE'S JOHNNY!"), Category(Category.Meme)]
         async Task Johnny(InteractionContext ctx,
-            [Option("user", UserArgRequiredDescription)] DiscordUser user,
+            [Option("user", UserArgRequiredDescription)] DiscordUser target,
             [Option(AvatarArgName, AvatarArgDescription)] AvatarPreference avaPref = default)
         {
             await ctx.SendThinking();
 
             using var client = new WebClient();
             await using var userAvaStream = await ctx.Member.OpenReadAvatarAsync(avaPref, client);
-            await using var targetAvaStream = await ((DiscordMember)user).OpenReadAvatarAsync(avaPref, client);
+            await using var targetAvaStream = await ((DiscordMember)target).OpenReadAvatarAsync(avaPref, client);
             if (userAvaStream == null || targetAvaStream == null)
             {
                 await ctx.EditBasicAsync(AvatarFailed);
@@ -392,6 +515,68 @@ namespace KekBot.Commands {
                     FileMode.Open);
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile(file));
         }
+
+        [SlashCommandGroup("kaede", "Kaede holds up a sign, whatever the sign contains is up to you."), Category(Category.Meme)]
+        class KaedeCommands : ApplicationCommandModule
+        {
+            [SlashCommand("image", "Kaede holds up a sign, whatever the sign contains is up to you.")]
+            async Task KaedeImage(InteractionContext ctx,
+                [Option("image", ImageArgDescription)] string? uriString = null,
+                [Option(RebootArgName, RebootArgDescription)] bool reboot = false)
+            {
+                await ctx.SendThinking();
+
+                using var image = await GetImageArg(ctx, uriString);
+                if (image == null)
+                {
+                    await ctx.EditBasicAsync(ImageNotFound);
+                    return;
+                }
+
+                image.Resize(610, 379);
+                image.BackgroundColor = MagickColors.Transparent;
+                image.Extent(610, 379, Gravity.Center);
+
+                await Base(ctx, image, reboot);
+            }
+
+            [SlashCommand("text", "Kaede holds up a sign, whatever the sign contains is up to you.")]
+            async Task KaedeText(InteractionContext ctx,
+                [Option("text", "The text that'll be used in the meme.")] string text,
+                [Option(RebootArgName, RebootArgDescription)] bool reboot = false)
+            {
+                await ctx.SendThinking();
+
+                var textSettings = new MagickReadSettings
+                {
+                    Font = "Calibri-Bold",
+                    TextGravity = Gravity.Center,
+                    FillColor = MagickColors.Black,
+                    BackgroundColor = MagickColors.Transparent,
+                    Width = 610,
+                    Height = 379
+                };
+
+                using var image = new MagickImage($"caption:{PrepText(text).Replace("\\", "\\\\")}",
+                    textSettings);
+
+                await Base(ctx, image, reboot);
+            }
+
+            private async Task Base(InteractionContext ctx, MagickImage image, bool reboot)
+            {
+                using var template =
+                    new MagickImage(
+                        $"Resource/Files/memegen/kaededab{(reboot ? "-reboot" : "")}.jpg");
+                
+                image.Rotate(-6.92);
+                template.Composite(image, 144, 628, CompositeOperator.SrcOver);
+                await using var output = new MemoryStream(template.ToByteArray());
+
+                await ctx.EditResponseAsync(
+                    new DiscordWebhookBuilder().AddFile("kaededab.png", output));
+            }
+        }
         
         [SlashCommand("kirb", "POYO"), Category(Category.Meme)]
         async Task Kirb(InteractionContext ctx)
@@ -412,6 +597,120 @@ namespace KekBot.Commands {
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile(file));
         }
         
+        [SlashCommand("longlive", "LONG LIVE THE KING!"), Category(Category.Meme)]
+        async Task LongLive(InteractionContext ctx,
+            [Option("user", UserArgRequiredDescription)] DiscordUser target,
+            [Option(AvatarArgName, AvatarArgDescription)] AvatarPreference avaPref = default)
+        {
+            await ctx.SendThinking();
+
+            using var client = new WebClient();
+            await using var userAvaStream = await ctx.Member.OpenReadAvatarAsync(avaPref, client);
+            await using var targetAvaStream = await ((DiscordMember)target).OpenReadAvatarAsync(avaPref, client);
+            if (userAvaStream == null || targetAvaStream == null)
+            {
+                await ctx.EditBasicAsync(AvatarFailed);
+                return;
+            }
+            
+            using var userAva = new MagickImage(userAvaStream);
+            using var targetAva = new MagickImage(targetAvaStream);
+            using var template = new MagickImage("Resource/Files/memegen/longlivetheking_template.png");
+
+            userAva.Resize(479, 479);
+            targetAva.Resize(442, 442);
+
+            using var bg = new MagickImage(MagickColors.White, 479, 479);
+            template.Composite(bg, 1026, 42, CompositeOperator.SrcOver);
+            template.Composite(userAva, 1026, 42, CompositeOperator.SrcOver);
+            bg.Resize(442, 442);
+            template.Composite(bg, 503, 558, CompositeOperator.SrcOver);
+            template.Composite(targetAva, 503, 558, CompositeOperator.SrcOver);
+
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("theking.png", output));
+        }
+        
+        [SlashCommand("luigithumb", "Gives an image Luigi's approval."), Category(Category.Meme)]
+        async Task LuigiThumb(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+
+            using var image = await GetImageArg(ctx, uriString);
+            if (image == null)
+            {
+                await ctx.EditBasicAsync(ImageNotFound);
+                return;
+            }
+            
+            using var luigi = new MagickImage("Resource/Files/memegen/LuigiThumb.png");
+
+            luigi.Resize((int)(image.Width * .50), (int)(image.Height * .50));
+            image.Composite(luigi, image.Width - luigi.Width, image.Height - luigi.Height, CompositeOperator.SrcOver);
+
+            await using var output = new MemoryStream(image.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("loogi.png", output));
+        }
+        
+        [SlashCommand("magik", "Also known as the Content Awareness Scale. ..Huh? NotSoBot didn't die? This tribute was for nothing?")]
+        [Category(Category.Meme)]
+        async Task Magik(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+
+            using var image = await GetImageArg(ctx, uriString);
+            if (image == null)
+            {
+                await ctx.EditBasicAsync(ImageNotFound);
+                return;
+            }
+
+            image.Resize(800, 800);
+            image.LiquidRescale(400, 400);
+            image.LiquidRescale(1200, 1200);
+
+            await using var output = new MemoryStream(image.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("magik.png", output));
+        }
+        
+        [SlashCommand("notallowed", "Huh. I wonder who that's for?"), Category(Category.Meme)]
+        async Task NotAllowed(InteractionContext ctx,
+            [Option("user", UserArgOrYouDescription)] DiscordUser? user = null,
+            [Option(AvatarArgName, AvatarArgDescription)] AvatarPreference avaPref = default)
+        {
+            await ctx.SendThinking();
+
+            var m = (DiscordMember)(user ?? ctx.Member);
+
+            await using var avaStream = await m.OpenReadAvatarAsync(avaPref);
+            if (avaStream == null)
+            {
+                await ctx.EditBasicAsync(AvatarFailed);
+                return;
+            }
+            
+            using var ava = new MagickImage(avaStream);
+            using var template = new MagickImage("Resource/Files/memegen/notallowed.png");
+            //we use ava twice, so let's clone it just to have two high quality renders to work with.
+            using var clone = ava.Clone();
+            clone.Resize(340, 340);
+            using var bg = new MagickImage(MagickColors.White, 340, 340);
+            template.Composite(clone, 485, 83, CompositeOperator.DstOver);
+            template.Composite(bg, 485, 83, CompositeOperator.DstOver);
+            ava.Resize(390, 390);
+            bg.Resize(390, 390);
+            template.Composite(bg, 46, 63, CompositeOperator.SrcOver);
+            template.Composite(ava, 46, 63, CompositeOperator.SrcOver);
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("huh.png", output));
+        }
+        
         [SlashCommand("poosy", "\"Poosy...De...stroyer.\" ~Vinesauce Joel"), Category(Category.Meme)]
         async Task Poosy(InteractionContext ctx,
             [Option(RebootArgName, RebootArgDescription)] bool reboot = false)
@@ -421,6 +720,194 @@ namespace KekBot.Commands {
                 new FileStream($"Resource/Files/memegen/poosy{(reboot ? "-reboot" : "")}.png",
                     FileMode.Open);
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile(file));
+        }
+        
+        [SlashCommand("poster", "If only I had a Krabby Patty poster instead..."), Category(Category.Meme)]
+        async Task Poster(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+
+            using var image = await GetImageArg(ctx, uriString);
+            if (image == null)
+            {
+                await ctx.EditBasicAsync(ImageNotFound);
+                return;
+            }
+            
+            using var template = new MagickImage("Resource/Files/memegen/lick.png");
+
+            image.Resize(309, 225);
+            image.BackgroundColor = MagickColors.White;
+            image.VirtualPixelMethod = VirtualPixelMethod.Background;
+            image.Extent(309, 225, Gravity.Center);
+            var settings = new DistortSettings
+            {
+                Viewport = new MagickGeometry(template.Width, template.Height)
+            };
+            //Distort the image to match the perspective of the template.
+            //Pattern: (Src TL X, Src TL Y, Dest TL X, Dest TL Y, Src TR X, Src TR Y, Dest TR X, Dest TR Y, Src BR X, Src BR Y, Dest BR X, Dest BR Y, Src BL X, Src BL Y, Dest BR X, Dest BR Y)
+            image.Distort(DistortMethod.Perspective, settings, 0, 0, 291, 0, image.Width, 0, 599, 0, image.Width, image.Height, 599, 253, 0, image.Height, 291, 224);
+            template.Composite(image, CompositeOperator.DstOver);
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("poster.png", output));
+        }
+        
+        [SlashCommand("switch", "Shows how easy it is to setup a switch, with a twist."), Category(Category.Meme)]
+        async Task Switch(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+
+            using var image = await GetImageArg(ctx, uriString);
+            if (image == null)
+            {
+                await ctx.EditBasicAsync(ImageNotFound);
+                return;
+            }
+                
+            using var template = new MagickImage("Resource/Files/memegen/switch_setup.png");
+
+            image.Resize(174, 157);
+            image.BackgroundColor = MagickColors.Transparent;
+            image.Extent(174, 157, Gravity.Center);
+            template.Composite(image, 366, 214, CompositeOperator.DstOver);
+
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("swatch.png", output));
+        }
+        
+        [SlashCommand("technology", "\"We have T E C H N O L O G Y\" ~Patrick"), Category(Category.Meme)]
+        async Task Technology(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+
+            using var image = await GetImageArg(ctx, uriString);
+            if (image == null)
+            {
+                await ctx.EditBasicAsync(ImageNotFound);
+                return;
+            }
+            
+            using var template = new MagickImage("Resource/Files/memegen/wehavetechnology.png");
+
+            image.Resize(335, 286);
+            image.BackgroundColor = MagickColors.White;
+            image.Extent(335, 286, Gravity.Center);
+            template.Composite(image, 37, 555, CompositeOperator.DstOver);
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(
+                new DiscordWebhookBuilder().AddFile("T E C H N O L O G Y.png", output));
+        }
+        
+        [SlashCommand("torture", "The worst torture possible."), Category(Category.Meme)]
+        async Task Torture(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+
+            using var image = await GetImageArg(ctx, uriString);
+            if (image == null)
+            {
+                await ctx.EditBasicAsync(ImageNotFound);
+                return;
+            }
+                
+            using var template = new MagickImage("Resource/Files/memegen/torture.png");
+
+            var widthRatio = 199d / image.Width;
+            var heightRatio = 191d / image.Height;
+            var ratio = Math.Min(widthRatio, heightRatio);
+
+            var width = (int)(image.Width * ratio);
+            var height = (int)(image.Height * ratio);
+
+            var x = (199 / 2) - (width / 2);
+            var y = (191 / 2) - (height / 2);
+
+            image.Resize(199, 191);
+            image.BackgroundColor = MagickColors.Black;
+            image.Extent(199, 191, Gravity.Center);
+            template.Composite(image, 248, 159, CompositeOperator.DstOver);
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("torture.png", output));
+        }
+        
+        [SlashCommand("trash", "This piece of trash was mistaken for art?"), Category(Category.Meme)]
+        async Task Trash(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+
+            using var image = await GetImageArg(ctx, uriString);
+            if (image == null)
+            {
+                await ctx.EditBasicAsync(ImageNotFound);
+                return;
+            }
+                
+            using var clone = image.Clone();
+            using var template = new MagickImage("Resource/Files/memegen/trash.png");
+
+            image.Resize(382, 262);
+            image.BackgroundColor = MagickColors.White;
+            image.VirtualPixelMethod = VirtualPixelMethod.Background;
+            image.Extent(382, 262, Gravity.Center);
+            var settings = new DistortSettings
+            {
+                Viewport = new MagickGeometry(template.Width, template.Height)
+            };
+            //Distort the image to match the perspective of the template.
+            //Pattern: (Src TL X, Src TL Y, Dest TL X, Dest TL Y, Src TR X, Src TR Y, Dest TR X, Dest TR Y, Src BR X, Src BR Y, Dest BR X, Dest BR Y, Src BL X, Src BL Y, Dest BR X, Dest BR Y)
+            image.Distort(DistortMethod.Perspective, settings, 0, 0, 620, 102, image.Width, 0, 983, 200, image.Width, image.Height, 917, 446, 0, image.Height, 551, 334);
+
+            clone.Resize(123, 86);
+            clone.BackgroundColor = MagickColors.Transparent;
+            clone.VirtualPixelMethod = VirtualPixelMethod.Background;
+            clone.Extent(123, 86, Gravity.Center);
+            clone.Distort(DistortMethod.Perspective, settings, 0, 0, 353, 317, clone.Width, 0, 473, 322, clone.Width, clone.Height, 468, 404, 0, clone.Height, 349, 397);
+            image.Composite(clone, CompositeOperator.SrcOver);
+            template.Composite(image, CompositeOperator.DstOver);
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(
+                new DiscordWebhookBuilder().AddFile("trash_but_its_not.png", output));
+        }
+        
+        [SlashCommand("trashwaifu", "Your waifu is entry level garbage!"), Category(Category.Meme)]
+        async Task TrashWaifu(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+
+            using var image = await GetImageArg(ctx, uriString);
+            if (image == null)
+            {
+                await ctx.ReplyBasicAsync(ImageNotFound);
+                return;
+            }
+                
+            using var template = new MagickImage("Resource/Files/memegen/trash_waifu.png");
+            using var bg = new MagickImage(MagickColors.White, 139, 167);
+
+            image.Rotate(18.89);
+            image.Trim();
+            image.Shave(1, 1);
+
+            image.Resize(144, 176);
+            image.BackgroundColor = MagickColors.Transparent;
+            image.Extent(144, 176, Gravity.Center);
+            template.Composite(image, 103, 175, CompositeOperator.DstOver);
+            template.Composite(bg, 106, 177, CompositeOperator.DstOver);
+
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("trash.png", output));
         }
         
         [SlashCommand("triggered", "I'm T R I G G E R E D"), Category(Category.Meme)]
@@ -466,6 +953,33 @@ namespace KekBot.Commands {
             await ctx.EditResponseAsync(
                 new DiscordWebhookBuilder().AddFile("triggered.gif", stream));
         }
+        
+        [SlashCommand("urgent", "If this is urgent, reply \"urgent\"..."), Category(Category.Meme)]
+        async Task Urgent(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+            
+            using var image = await GetImageArg(ctx, uriString);
+            if (image == null)
+            {
+                await ctx.ReplyBasicAsync(ImageNotFound);
+                return;
+            }
+                
+            using var template = new MagickImage("Resource/Files/memegen/urgent.png");
+            using var bg = new MagickImage(MagickColors.Black, 552, 465);
+
+            image.Resize(552, 465);
+            image.BackgroundColor = MagickColors.Transparent;
+            image.Extent(552, 465, Gravity.Center);
+            template.Composite(image, 22, 11, CompositeOperator.DstOver);
+            template.Composite(bg, 22, 11, CompositeOperator.DstOver);
+
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("urgent.png", output));
+        }
 
         [SlashCommand("youtried", "You tried. Here's a gold star!"), Category(Category.Meme)]
         async Task YouTried(InteractionContext ctx)
@@ -482,586 +996,6 @@ namespace KekBot.Commands {
     public class MemeCommandsOld : BaseCommandModule {
 
         private readonly Randumb Random = Randumb.Instance;
-
-        [Command("luigithumb"), Aliases("luigi"), Description("Gives an image Luigi's approval."), Category(Category.Meme)]
-        async Task LuigiThumb(CommandContext ctx,
-            [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var luigi = new MagickImage("Resource/Files/memegen/LuigiThumb.png");
-
-                luigi.Resize((int)(image.Width * .50), (int)(image.Height * .50));
-                image.Composite(luigi, image.Width - luigi.Width, image.Height - luigi.Height, CompositeOperator.SrcOver);
-
-                using var output = new MemoryStream(image.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("loogi.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("magik"), Description("Also known as the Content Awareness Scale."), ExtendedDescription("Huh? What do you mean NotSoBot didn't die? You mean this tribute was for nothing? Wack.")]
-        [Category(Category.Meme)]
-        async Task Magik(CommandContext ctx,
-            [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-
-                image.Resize(800, 800);
-                image.LiquidRescale(400, 400);
-                image.LiquidRescale(1200, 1200);
-
-                using var output = new MemoryStream(image.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("magik.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("poster"), Description("If only I had a Krabby Patty poster instead..."), Category(Category.Meme)]
-        async Task Poster(CommandContext ctx,
-            [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/lick.png");
-
-                image.Resize(309, 225);
-                image.BackgroundColor = MagickColors.White;
-                image.VirtualPixelMethod = VirtualPixelMethod.Background;
-                image.Extent(309, 225, Gravity.Center);
-                var settings = new DistortSettings() {
-                    Viewport = new MagickGeometry(template.Width, template.Height)
-                };
-                //Distort the image to match the perspective of the template.
-                //Pattern: (Src TL X, Src TL Y, Dest TL X, Dest TL Y, Src TR X, Src TR Y, Dest TR X, Dest TR Y, Src BR X, Src BR Y, Dest BR X, Dest BR Y, Src BL X, Src BL Y, Dest BR X, Dest BR Y)
-                image.Distort(DistortMethod.Perspective, settings, 0, 0, 291, 0, image.Width, 0, 599, 0, image.Width, image.Height, 599, 253, 0, image.Height, 291, 224);
-                template.Composite(image, CompositeOperator.DstOver);
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("poster.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("longlive"), Description("LONG LIVE THE KING!"), Category(Category.Meme)]
-        async Task LongLive(CommandContext ctx, [RemainingText, Description("The user to target for the image.")] DiscordMember Member) {
-            await ctx.TriggerTypingAsync();
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(ctx.Member.AvatarUrl);
-                using var user = new MagickImage(_);
-                using var __ = await client.OpenReadTaskAsync(Member.AvatarUrl);
-                using var target = new MagickImage(__);
-                using var template = new MagickImage("Resource/Files/memegen/longlivetheking_template.png");
-
-                user.Resize(479, 479);
-                target.Resize(442, 442);
-
-                using var bg = new MagickImage(MagickColors.White, 479, 479);
-                template.Composite(bg, 1026, 42, CompositeOperator.SrcOver);
-                template.Composite(user, 1026, 42, CompositeOperator.SrcOver);
-                bg.Resize(442, 442);
-                template.Composite(bg, 503, 558, CompositeOperator.SrcOver);
-                template.Composite(target, 503, 558, CompositeOperator.SrcOver);
-
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("theking.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("notallowed"), Description("Huh. I wonder who that's for?"), Category(Category.Meme)]
-        async Task NotAllowed(CommandContext ctx, [Description("The user to generate the image from. (If none given, it uses you.)")] DiscordMember? Member = null) {
-            await ctx.TriggerTypingAsync();
-
-            var m = Member ?? ctx.Member;
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(m.AvatarUrl);
-                using var ava = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/notallowed.png");
-                //we use ava twice, so let's clone it just to have two high quality renders to work with.
-                using var clone = ava.Clone();
-                clone.Resize(340, 340);
-                using var bg = new MagickImage(MagickColors.White, 340, 340);
-                template.Composite(clone, 485, 83, CompositeOperator.DstOver);
-                template.Composite(bg, 485, 83, CompositeOperator.DstOver);
-                ava.Resize(390, 390);
-                bg.Resize(390, 390);
-                template.Composite(bg, 46, 63, CompositeOperator.SrcOver);
-                template.Composite(ava, 46, 63, CompositeOperator.SrcOver);
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("huh.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("technology"), Description("\"We have T E C H N O L O G Y\" ~Patrick"), Category(Category.Meme)]
-        async Task Technology(CommandContext ctx,
-            [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/wehavetechnology.png");
-
-                image.Resize(335, 286);
-                image.BackgroundColor = MagickColors.White;
-                image.Extent(335, 286, Gravity.Center);
-                template.Composite(image, 37, 555, CompositeOperator.DstOver);
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("T E C H N O L O G Y.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("torture"), Description("The worst torture possible."), Category(Category.Meme)]
-        async Task Torture(CommandContext ctx,
-            [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/torture.png");
-
-                var widthRatio = 199d / image.Width;
-                var heightRatio = 191d / image.Height;
-                var ratio = Math.Min(widthRatio, heightRatio);
-
-                var width = (int)(image.Width * ratio);
-                var height = (int)(image.Height * ratio);
-
-                var x = (199 / 2) - (width / 2);
-                var y = (191 / 2) - (height / 2);
-
-                image.Resize(199, 191);
-                image.BackgroundColor = MagickColors.Black;
-                image.Extent(199, 191, Gravity.Center);
-                template.Composite(image, 248, 159, CompositeOperator.DstOver);
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("torture.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("trashwaifu"), Description("Your waifu is entry level garbage!"), Category(Category.Meme)]
-        async Task TrashWaifu(CommandContext ctx,
-            [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/trash_waifu.png");
-                using var bg = new MagickImage(MagickColors.White, 139, 167);
-
-                image.Rotate(18.89);
-                image.Trim();
-                image.Shave(1, 1);
-
-                image.Resize(144, 176);
-                image.BackgroundColor = MagickColors.Transparent;
-                image.Extent(144, 176, Gravity.Center);
-                template.Composite(image, 103, 175, CompositeOperator.DstOver);
-                template.Composite(bg, 106, 177, CompositeOperator.DstOver);
-
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("trash.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("urgent"), Description("If this is urgent, reply \"urgent\"..."), Category(Category.Meme)]
-        async Task Urgent(CommandContext ctx,
-            [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/urgent.png");
-                using var bg = new MagickImage(MagickColors.Black, 552, 465);
-
-                image.Resize(552, 465);
-                image.BackgroundColor = MagickColors.Transparent;
-                image.Extent(552, 465, Gravity.Center);
-                template.Composite(image, 22, 11, CompositeOperator.DstOver);
-                template.Composite(bg, 22, 11, CompositeOperator.DstOver);
-
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("urgent.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("trash"), Description("This piece of trash was mistaken for art?"), Category(Category.Meme)]
-        async Task Trash(CommandContext ctx,
-            [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var clone = image.Clone();
-                using var template = new MagickImage("Resource/Files/memegen/trash.png");
-
-                image.Resize(382, 262);
-                image.BackgroundColor = MagickColors.White;
-                image.VirtualPixelMethod = VirtualPixelMethod.Background;
-                image.Extent(382, 262, Gravity.Center);
-                var settings = new DistortSettings() {
-                    Viewport = new MagickGeometry(template.Width, template.Height)
-                };
-                //Distort the image to match the perspective of the template.
-                //Pattern: (Src TL X, Src TL Y, Dest TL X, Dest TL Y, Src TR X, Src TR Y, Dest TR X, Dest TR Y, Src BR X, Src BR Y, Dest BR X, Dest BR Y, Src BL X, Src BL Y, Dest BR X, Dest BR Y)
-                image.Distort(DistortMethod.Perspective, settings, 0, 0, 620, 102, image.Width, 0, 983, 200, image.Width, image.Height, 917, 446, 0, image.Height, 551, 334);
-
-                clone.Resize(123, 86);
-                clone.BackgroundColor = MagickColors.Transparent;
-                clone.VirtualPixelMethod = VirtualPixelMethod.Background;
-                clone.Extent(123, 86, Gravity.Center);
-                clone.Distort(DistortMethod.Perspective, settings, 0, 0, 353, 317, clone.Width, 0, 473, 322, clone.Width, clone.Height, 468, 404, 0, clone.Height, 349, 397);
-                image.Composite(clone, CompositeOperator.SrcOver);
-                template.Composite(image, CompositeOperator.DstOver);
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("trash_but_its_not.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("byemom"), Description("OK BYE MOM"), Category(Category.Meme)]
-        async Task ByeMom(CommandContext ctx, [RemainingText, Description("The text that'll be used in the meme. (Max 50 chars)")] string Text) {
-            if (Text.Length > 50) {
-                await ctx.RespondAsync("You cannot have more than 50 characters in this command.");
-            }
-            await ctx.TriggerTypingAsync();
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(ctx.Member.AvatarUrl);
-                using var ava = new MagickImage(_);
-                using var clone = ava.Clone();
-                using var template = new MagickImage("Resource/Files/memegen/byemom_template.png");
-                using var bg = new MagickImage(MagickColors.White, 128, 128);
-
-                var textSettings = new MagickReadSettings() {
-                    Font = "Ariel",
-                    TextGravity = Gravity.West,
-                    BackgroundColor = MagickColors.Transparent,
-                    Width = 388,
-                    Height = 28
-                };
-                using var text = new MagickImage($"caption:{Text.Replace("\\", "\\\\")}", textSettings);
-                text.Rotate(-25);
-
-                ava.Resize(80, 80);
-                clone.Resize(128, 128);
-                template.Composite(bg, 73, 338, CompositeOperator.SrcOver);
-                template.Composite(clone, 73, 338, CompositeOperator.SrcOver);
-                bg.Resize(80, 80);
-                template.Composite(bg, 523, 12, CompositeOperator.SrcOver);
-                template.Composite(ava, 523, 12, CompositeOperator.SrcOver);
-                template.Composite(text, 345, 426, CompositeOperator.SrcOver);
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("byemom.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("doggo"), Description("Doggo displays your text/image on his board!"), Category(Category.Meme), Priority(1)]
-        async Task Doggo(CommandContext ctx, [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/doggo.jpg");
-
-                image.Resize(376, 299);
-                image.BackgroundColor = MagickColors.Transparent;
-                image.Extent(376, 299, Gravity.Center);
-                template.Composite(image, 135, 57, CompositeOperator.SrcOver);
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("doggo.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("doggo"), Priority(0)]
-        async Task Doggo(CommandContext ctx, [Description("The text that'll be used in the meme."), RemainingText] string Text) {
-            await ctx.TriggerTypingAsync();
-
-            using var template = new MagickImage("Resource/Files/memegen/doggo.jpg");
-
-            var textSettings = new MagickReadSettings() {
-                Font = "Calibri-Bold",
-                TextGravity = Gravity.Center,
-                FillColor = MagickColors.Black,
-                BackgroundColor = MagickColors.Transparent,
-                Width = 376,
-                Height = 299
-            };
-
-            using var text = new MagickImage($"caption:{PrepText(Text).Replace("\\", "\\\\")}", textSettings);
-
-            template.Composite(text, 135, 57, CompositeOperator.SrcOver);
-            using var output = new MemoryStream(template.ToByteArray());
-
-            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("doggo.png", output).WithReply(ctx.Message.Id));
-        }
-
-        [Command("kaede"), Description("Kaede holds up a sign, whatever the sign contains is up to you."), Category(Category.Meme), Priority(1)]
-        async Task Kaede(CommandContext ctx, [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")]
-            Uri? Image = null, [HiddenParam, RemainingText] FlagArgs flags = new FlagArgs()) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            var reboot = flags.ParseBool("reboot") ?? false;
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var template = new MagickImage($"Resource/Files/memegen/kaededab{(reboot ? "-reboot" : "")}.jpg");
-
-                image.Resize(610, 379);
-                image.BackgroundColor = MagickColors.Transparent;
-                image.Extent(610, 379, Gravity.Center);
-                image.Rotate(-6.92);
-                template.Composite(image, 144, 628, CompositeOperator.SrcOver);
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("kaededab.png", output).WithReply(ctx.Message.Id));
-            }
-        }
-
-        [Command("kaede"), Priority(0)]
-        async Task Kaede(CommandContext ctx, [Description("The text that'll be used in the meme."), RemainingText] string Text) {
-            await ctx.TriggerTypingAsync();
-
-            var flags = FlagArgs.ParseString(Text, out var stripped) ?? new FlagArgs();
-
-            var reboot = flags.ParseBool("reboot") ?? false;
-
-
-            using var template = new MagickImage($"Resource/Files/memegen/kaededab{(reboot ? "-reboot" : "")}.jpg");
-
-            var textSettings = new MagickReadSettings() {
-                Font = "Calibri-Bold",
-                TextGravity = Gravity.Center,
-                FillColor = MagickColors.Black,
-                BackgroundColor = MagickColors.Transparent,
-                Width = 610,
-                Height = 379
-            };
-
-            using var text = new MagickImage($"caption:{PrepText(stripped).Replace("\\", "\\\\")}", textSettings);
-            text.Rotate(-6.92);
-            template.Composite(text, 144, 628, CompositeOperator.SrcOver);
-            using var output = new MemoryStream(template.ToByteArray());
-
-            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("kaededab.png", output).WithReply(ctx.Message.Id));
-
-        }
-
-        [Command("switch"), Description("Shows how easy it is to setup a switch, with a twist."), Category(Category.Meme)]
-        async Task Switch(CommandContext ctx, [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")] Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/switch_setup.png");
-
-                image.Resize(174, 157);
-                image.BackgroundColor = MagickColors.Transparent;
-                image.Extent(174, 157, Gravity.Center);
-                template.Composite(image, 366, 214, CompositeOperator.DstOver);
-
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("swatch.png", output).WithReply(ctx.Message.Id));
-            }
-        }
 
         [Command("www"), Description("Thanks to the miracle of the world wide web, I can search anything I want!"), Category(Category.Meme)]
         async Task WWW(CommandContext ctx, [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")] Uri? Image = null) {
