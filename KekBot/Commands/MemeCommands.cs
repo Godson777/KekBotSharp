@@ -980,6 +980,32 @@ namespace KekBot.Commands {
 
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("urgent.png", output));
         }
+        
+        [SlashCommand("www", "Thanks to the miracle of the world wide web, I can search anything I want!"), Category(Category.Meme)]
+        async Task WWW(InteractionContext ctx,
+            [Option("image", ImageArgDescription)] string? uriString = null)
+        {
+            await ctx.SendThinking();
+
+            using var image = await GetImageArg(ctx, uriString);
+            if (image == null)
+            {
+                await ctx.EditBasicAsync(ImageNotFound);
+                return;
+            }
+                
+            using var template = new MagickImage("Resource/Files/memegen/www.png");
+
+            image.Resize(165, 131);
+            image.BackgroundColor = MagickColors.Transparent;
+            image.Extent(165, 131, Gravity.Center);
+            template.Composite(image, 132, 466, CompositeOperator.DstOver);
+
+            await using var output = new MemoryStream(template.ToByteArray());
+
+            await ctx.EditResponseAsync(
+                new DiscordWebhookBuilder().AddFile("marvelous.png", output));
+        }
 
         [SlashCommand("youtried", "You tried. Here's a gold star!"), Category(Category.Meme)]
         async Task YouTried(InteractionContext ctx)
@@ -996,41 +1022,6 @@ namespace KekBot.Commands {
     public class MemeCommandsOld : BaseCommandModule {
 
         private readonly Randumb Random = Randumb.Instance;
-
-        [Command("www"), Description("Thanks to the miracle of the world wide web, I can search anything I want!"), Category(Category.Meme)]
-        async Task WWW(CommandContext ctx, [Description("The link to an image to use for this meme. If none given, KekBot will search your command for an attachment. If none found, it'll search message history for an image to use.")] Uri? Image = null) {
-            await ctx.TriggerTypingAsync();
-
-            Uri? uri = Image;
-            //Checks if "Image" was null.
-            if (uri == null) {
-                if (ctx.Message.Attachments.Count > 0) {
-                    uri = new Uri(ctx.Message.Attachments[0].Url);
-                } else {
-                    uri = await HuntForImage(ctx);
-                }
-            }
-            //Checks if the search failed.
-            if (uri == null) {
-                await ctx.RespondAsync("No image found.");
-                return;
-            }
-
-            using (var client = new WebClient()) {
-                using var _ = await client.OpenReadTaskAsync(uri);
-                using var image = new MagickImage(_);
-                using var template = new MagickImage("Resource/Files/memegen/www.png");
-
-                image.Resize(165, 131);
-                image.BackgroundColor = MagickColors.Transparent;
-                image.Extent(165, 131, Gravity.Center);
-                template.Composite(image, 132, 466, CompositeOperator.DstOver);
-
-                using var output = new MemoryStream(template.ToByteArray());
-
-                await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("marvelous.png", output).WithReply(ctx.Message.Id));
-            }
-        }
 
         //This command was the most bullshit to implement to CLOSELY imitate the java version. Never. Again.
         [Command("gru"), Description("Gru demonstrates your master plan...?"), Category(Category.Meme), ExtendedDescription("I wonder what would happen if you typed `--hyper` at the end..."), Priority(2)]
