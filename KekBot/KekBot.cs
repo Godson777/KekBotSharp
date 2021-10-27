@@ -157,11 +157,22 @@ namespace KekBot {
                     .AddSingleton(new WeebCommandsBase(Name, Version, config.WeebToken))
                     .BuildServiceProvider()
             });
-            slash.SlashCommandErrored += (sender, args) =>
+            slash.SlashCommandErrored += async (sender, args) =>
             {
                 Console.WriteLine("Slash command error.");
-                Console.WriteLine(args.Exception);
-                return Task.CompletedTask;
+                var e = args.Exception;
+                Console.WriteLine(e);
+                var errMsg = $"Command failed: {e.Message}";
+                var ctx = args.Context;
+                try
+                {
+                    await ctx.FollowUpAsync(
+                        new DiscordFollowupMessageBuilder().WithContent(errMsg));
+                }
+                catch (NotFoundException)
+                {
+                    await ctx.Channel.SendMessageAsync(errMsg);
+                }
             };
             slash.RegisterCommands<PingCommand>(testGuildId);
             slash.RegisterCommands<MemeCommands>(testGuildId);

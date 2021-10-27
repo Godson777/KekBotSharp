@@ -475,6 +475,133 @@ namespace KekBot.Commands {
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile(file));
         }
         
+        enum GruVariant
+        {
+            [ChoiceName("original")]
+            Gru = 0, // default
+            [ChoiceName("egg")]
+            Eggman,
+        }
+        
+        [SlashCommand("gru", "Gru demonstrates your master plan...?"), Category(Category.Meme)]
+        async Task Gru(InteractionContext ctx,
+            [Option("input1", "Text or a URL to an image.")] string input1,
+            [Option("input2", "If not given, input1 will carry over.")] string? input2 = null,
+            [Option("input3", "If not given, input2 will carry over.")] string? input3 = null,
+            [Option("variant", "Gru, is that you...?")] GruVariant variant = default,
+            [Option("hyper", "I wonder what this does...")] bool hyper = false)
+        {
+            await ctx.SendThinking();
+
+            static async Task<MagickImage?> TryFetchImage(string? uriStr)
+            {
+                if (!Util.TryParseUri(uriStr, out var uri)) return null;
+
+                using var client = new WebClient();
+                await using var stream = await client.OpenReadTaskAsync(uri);
+#pragma warning disable CA2000
+                // I can't dispose of this yet, I use it later!
+                var image = new MagickImage(stream)
+                {
+                    BackgroundColor = MagickColors.Transparent
+                };
+#pragma warning restore CA2000
+                image.Resize(270, 360);
+                image.Extent(270, 360, Gravity.Center);
+                return image;
+            }
+
+            MagickImage? image1, image2, image3;
+            try
+            {
+                (
+                    image1,
+                    image2,
+                    image3
+                ) = await Util.AllTasks(
+                    TryFetchImage(input1),
+                    TryFetchImage(input2),
+                    TryFetchImage(input3)
+                );
+            }
+            catch (Exception e) when (e is WebException || e is MagickException)
+            {
+                await ctx.EditBasicAsync("Error while loading image.");
+                return;
+            }
+
+            // Default 2 to 1, and 3 to 2.
+            if (input2 == null)
+            {
+                image2 = image1;
+                input2 = input1;
+            }
+            if (input3 == null)
+            {
+                image3 = image2;
+                input3 = input2;
+            }
+
+            var egg = variant switch
+            {
+                GruVariant.Gru => false,
+                GruVariant.Eggman => true,
+                _ => throw new NotImplementedException($"unknown {nameof(GruVariant)}")
+            };
+
+            using var template =
+                new MagickImage(
+                    $"Resource/Files/memegen/grusmasterplan{(egg ? "egg" : "")}{(hyper ? "hyper" : "")}.png");
+
+            if (image1 == null) DrawText(input1, template, egg ? 493 : 436, 114);
+            else DrawImage(image1, template, egg ? 493 : 436, 114);
+
+            if (image2 == null) DrawText(input2, template, egg ? 1343 : 1191, 114);
+            else DrawImage(image2, template, egg ? 1343 : 1191, 114);
+
+            if (image3 == null)
+            {
+                DrawText(input3, template, egg ? 491 : 442, 595);
+                DrawText(input3, template, egg ? 1347 : 1190, 595);
+                if (hyper) DrawText(input3, template, egg ? 918 : 786, 1073);
+            }
+            else
+            {
+                DrawImage(image3, template, egg ? 491 : 442, 595);
+                DrawImage(image3, template, egg ? 1347 : 1190, 595);
+                if (hyper) DrawImage(image3, template, egg ? 918 : 786, 1073);
+            }
+
+            await using var result = new MemoryStream(template.ToByteArray());
+            
+            await ctx.EditResponseAsync(
+                new DiscordWebhookBuilder().AddFile("masterplan.png", result));
+            
+            //A method in a method? Crazy.
+            static void DrawImage(MagickImage image, MagickImage template, int x, int y)
+            {
+                template.Composite(image, x, y, CompositeOperator.SrcOver);
+            }
+
+            //Another method in a method? Crazy.
+            static void DrawText(string str, MagickImage template, int x, int y) {
+                var textSettings = new MagickReadSettings
+                {
+                    Font = "Calibri-Bold",
+                    TextGravity = Gravity.Center,
+                    FillColor = MagickColors.Black,
+                    BackgroundColor = MagickColors.Transparent,
+                    Width = 270,
+                    Height = 360
+                };
+
+                using var text = new MagickImage($"caption:{PrepText(str).Replace("\\", "\\\\")}",
+                    textSettings);
+
+                template.Composite(text, x, y, CompositeOperator.SrcOver);
+            }
+        }
+        
         [SlashCommand("johnny", "HEREEEE'S JOHNNY!"), Category(Category.Meme)]
         async Task Johnny(InteractionContext ctx,
             [Option("user", UserArgRequiredDescription)] DiscordUser target,
@@ -1016,153 +1143,12 @@ namespace KekBot.Commands {
                     FileMode.Open);
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile(file));
         }
-        
+
     }
     
     public class MemeCommandsOld : BaseCommandModule {
 
         private readonly Randumb Random = Randumb.Instance;
-
-        //This command was the most bullshit to implement to CLOSELY imitate the java version. Never. Again.
-        [Command("gru"), Description("Gru demonstrates your master plan...?"), Category(Category.Meme), ExtendedDescription("I wonder what would happen if you typed `--hyper` at the end..."), Priority(2)]
-        async Task Gru(CommandContext ctx, [Description("Text surrounded in \"quotes\", or a URL to an image.")] string Input1, [Description("If no input given, Input1 will carry over.")] string Input2, [Description("If no input given, Input2 will carry over.")] string Input3, [HiddenParam, RemainingText] FlagArgs f = new FlagArgs()) {
-            await ctx.TriggerTypingAsync();
-
-            //This is SUPER gross but it lets us do things the way we want, shush.
-            var flags1 = FlagArgs.ParseString(Input1, out var stripped1) ?? new FlagArgs();
-            var flags2 = FlagArgs.ParseString(Input2, out var stripped2) ?? new FlagArgs();
-            var flags3 = FlagArgs.ParseString(Input3, out var stripped3) ?? new FlagArgs();
-
-            var egg = f.ParseBool("egg") ?? flags1.ParseBool("egg") ?? flags2.ParseBool("egg") ?? flags3.ParseBool("egg") ?? false;
-            var hyper = f.ParseBool("hyper") ?? flags1.ParseBool("hyper") ?? flags2.ParseBool("hyper") ?? flags3.ParseBool("hyper") ?? false;
-
-            //WELCOME TO MY BULLSHIT DETECTOR
-            if (string.IsNullOrWhiteSpace(stripped1)) {
-                stripped1 = string.IsNullOrWhiteSpace(stripped2) ? string.IsNullOrWhiteSpace(stripped3) ? null : stripped3 : stripped2;
-            }
-
-            if (string.IsNullOrWhiteSpace(stripped2)) {
-                stripped2 = string.IsNullOrWhiteSpace(stripped1) ? string.IsNullOrWhiteSpace(stripped3) ? null : stripped3 : stripped1;
-            }
-
-            if (string.IsNullOrWhiteSpace(stripped3)) {
-                stripped3 = string.IsNullOrWhiteSpace(stripped1) ? string.IsNullOrWhiteSpace(stripped2) ? null : stripped2 : stripped1;
-            }
-
-            if (stripped1 == null) {
-                await ctx.RespondAsync("No valid arguments.");
-                return;
-            }
-
-            using var result = await GenerateGru(ctx, stripped1, stripped2, stripped3, egg, hyper);
-            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("masterplan.png", result).WithReply(ctx.Message.Id));
-        }
-
-        [Command("gru"), Priority(1)]
-        async Task Gru(CommandContext ctx, [Description("Text surrounded in \"quotes\", or a URL to an image.")] string Input1, [Description("If no input given, Input1 will carry over.")] string Input2) {
-            await ctx.TriggerTypingAsync();
-
-            //This is gross but it lets us do things the way we want, shush.
-            var flags1 = FlagArgs.ParseString(Input1, out var stripped1) ?? new FlagArgs();
-            var flags2 = FlagArgs.ParseString(Input2, out var stripped2) ?? new FlagArgs();
-
-            var egg = flags1.ParseBool("egg") ?? flags2.ParseBool("egg") ?? false;
-            var hyper = flags1.ParseBool("hyper") ?? flags2.ParseBool("hyper") ?? false;
-
-            //WELCOME TO MY BULLSHIT DETECTOR (two argument edition)
-            if (string.IsNullOrWhiteSpace(stripped1)) {
-                stripped1 = string.IsNullOrWhiteSpace(stripped2) ? null : stripped2;
-            }
-
-            if (string.IsNullOrWhiteSpace(stripped2)) {
-                stripped2 = string.IsNullOrWhiteSpace(stripped1) ? null : stripped1;
-            }
-
-            if (stripped1 == null) {
-                await ctx.RespondAsync("No valid arguments.");
-                return;
-            }
-
-            using var result = await GenerateGru(ctx, stripped1, stripped2, stripped2, egg, hyper);
-            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("masterplan.png", result).WithReply(ctx.Message.Id));
-        }
-
-        [Command("gru"), Priority(0)]
-        async Task Gru(CommandContext ctx, [Description("Text surrounded in \"quotes\", or a URL to an image.")] string Input) {
-            await ctx.TriggerTypingAsync();
-
-            //This is gross but it lets us do things the way we want, shush.
-            var flags1 = FlagArgs.ParseString(Input, out var stripped) ?? new FlagArgs();
-
-            var egg = flags1.ParseBool("egg") ?? false;
-            var hyper = flags1.ParseBool("hyper") ?? false;
-
-            //WELCOME TO MY BULLSHIT DETECTOR (single argument edition)
-            if (string.IsNullOrWhiteSpace(stripped)) {
-                await ctx.RespondAsync("No valid arguments.");
-                return;
-            }
-
-            using var result = await GenerateGru(ctx, stripped, stripped, stripped, egg, hyper);
-            await ctx.RespondAsync(new DiscordMessageBuilder().WithFile("masterplan.png", result).WithReply(ctx.Message.Id));
-        }
-
-        async Task<MemoryStream> GenerateGru(CommandContext ctx, string i1, string i2, string i3, bool egg, bool hyper) {
-            //Converts our first input to a URI, will be null if not a valid URL.
-            Uri uri1 = await Util.ConvertArgAsync<Uri>(i1, ctx);
-            //If our second input is the same as our first, we reuse the first variable, otherwise convert to URI.
-            Uri uri2 = i2 == i1 ? uri1 : await Util.ConvertArgAsync<Uri>(i2, ctx);
-            //Same logic applies here.
-            Uri uri3 = i3 == i2 ? uri2 : await Util.ConvertArgAsync<Uri>(i3, ctx);
-
-            using var template = new MagickImage($"Resource/Files/memegen/grusmasterplan{(egg ? "egg" : "")}{(hyper ? "hyper" : "")}.png");
-
-            if (uri1 != null) await DrawImage(uri1, template, egg ? 493 : 436, 114);
-            else DrawText(i1, template, egg ? 493 : 436, 114);
-            if (uri2 != null) await DrawImage(uri2, template, egg ? 1343 : 1191, 114);
-            else DrawText(i2, template, egg ? 1343 : 1191, 114);
-            if (uri3 != null) {
-                await DrawImage(uri3, template, egg ? 491 : 442, 595);
-                await DrawImage(uri3, template, egg ? 1347 : 1190, 595);
-                if (hyper) await DrawImage(uri3, template, egg ? 918 : 786, 1073);
-            } else {
-                DrawText(i3, template, egg ? 491 : 442, 595);
-                DrawText(i3, template, egg ? 1347 : 1190, 595);
-                if (hyper) DrawText(i3, template, egg ? 918 : 786, 1073);
-            }
-
-            return new MemoryStream(template.ToByteArray());
-
-            //A method in a method? Crazy.
-            async Task DrawImage(Uri uri, MagickImage template, int x, int y) {
-                using (var client = new WebClient()) {
-                    using var img = await client.OpenReadTaskAsync(uri);
-                    using var image = new MagickImage(img) {
-                        BackgroundColor = MagickColors.Transparent
-                    };
-                    image.Resize(270, 360);
-                    image.Extent(270, 360, Gravity.Center);
-
-                    template.Composite(image, x, y, CompositeOperator.SrcOver);
-                }
-            }
-
-            //Another method in a method? Crazy.
-            void DrawText(string str, MagickImage template, int x, int y) {
-                var textSettings = new MagickReadSettings() {
-                    Font = "Calibri-Bold",
-                    TextGravity = Gravity.Center,
-                    FillColor = MagickColors.Black,
-                    BackgroundColor = MagickColors.Transparent,
-                    Width = 270,
-                    Height = 360
-                };
-
-                using var text = new MagickImage($"caption:{PrepText(str).Replace("\\", "\\\\")}", textSettings);
-
-                template.Composite(text, x, y, CompositeOperator.SrcOver);
-            }
-        }
 
         sealed class MemeVoiceCommands : BaseCommandModule {
             private MusicService Music { get; }
