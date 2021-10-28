@@ -147,7 +147,6 @@ namespace KekBot {
             CommandsNext.RegisterCommands<OwnerCommands>();
             CommandsNext.RegisterCommands<HelpCommand>();
             CommandsNext.RegisterCommands<FunCommands>();
-            CommandsNext.RegisterCommands<MemeCommandsOld>();
             
             // Put your guild ID here if you wanna test
             ulong? testGuildId = 233647821784350722;

@@ -1108,6 +1108,74 @@ namespace KekBot.Commands {
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("urgent.png", output));
         }
         
+        sealed class VoiceCommands : ApplicationCommandModule
+        {
+            public MusicService Music { private get; set; }
+            public GuildMusicData? GuildMusic { private get; set; }
+
+            public override async Task<bool> BeforeSlashExecutionAsync(InteractionContext ctx)
+            {
+                GuildMusic = await Music.GetDataAsync(ctx.Guild);
+                if (GuildMusic is { IsPlaying: true, IsMeme: false })
+                {
+                    await ctx.ReplyBasicAsync("I can't meme while music's playing...");
+                    return false;
+                }
+                
+                var chn = ctx.Member.VoiceState?.Channel;
+                if (chn == null)
+                {
+                    await ctx.ReplyBasicAsync("OwO What's this? You're not in a voice channel. 😦");
+                    return false;
+                }
+        
+                var mbr = ctx.Guild.CurrentMember?.VoiceState?.Channel;
+                if (mbr != null && chn != mbr) {
+                    await ctx.ReplyBasicAsync("You won't even hear it if you're way over there!");
+                    return false;
+                }
+        
+                GuildMusic = await Music.GetOrCreateDataAsync(ctx.Guild);
+
+                return true;
+            }
+            
+            [SlashCommand("gabe", "\"Bork!\" ~Gabe 2k17 <3"), Category(Category.Meme)]
+            async Task Gabe(InteractionContext ctx,
+                [Option(RebootArgName, RebootArgDescription)] bool reboot = false) =>
+                await Base(ctx, "gabe", reboot);
+            
+            [SlashCommand("granddad", "FLEENSTONES!?"), Category(Category.Meme)]
+            async Task GrandDad(InteractionContext ctx,
+                [Option(RebootArgName, RebootArgDescription)] bool reboot = false) =>
+                await Base(ctx, "granddad", reboot);
+
+            [SlashCommand("jontron", "Ech ~Jontron"), Category(Category.Meme)]
+            async Task Jontron(InteractionContext ctx,
+                [Option(RebootArgName, RebootArgDescription)] bool reboot = false) =>
+                await Base(ctx, "jontron", reboot);
+
+            //A few hacky workarounds to get the music player to play memes, but it's better than nothing.
+            async Task Base(InteractionContext ctx, string type, bool reboot)
+            {
+                await ctx.ReplyBasicAsync("Playing audio meme 🎵", true);
+                
+                var trackLoad = await Music.GetTracksFromFileAsync(new FileInfo(Directory
+                    .GetFiles($"Resource/Files/sound/{type}{(reboot ? "/reboot" : "")}")
+                    .RandomElement()));
+                var tracks = trackLoad.Tracks;
+                // Should be non-null here I think
+                var guildMusic = GuildMusic!;
+                foreach (var track in tracks)
+                    guildMusic.Enqueue(new MusicItem(track, ctx.Member));
+        
+                var vs = ctx.Member.VoiceState;
+                var chn = vs.Channel;
+                await guildMusic.CreateMemeAsync(chn);
+                await guildMusic.PlayAsync();
+            }
+        }
+        
         [SlashCommand("www", "Thanks to the miracle of the world wide web, I can search anything I want!"), Category(Category.Meme)]
         async Task WWW(InteractionContext ctx,
             [Option("image", ImageArgDescription)] string? uriString = null)
@@ -1144,126 +1212,5 @@ namespace KekBot.Commands {
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile(file));
         }
 
-    }
-    
-    public class MemeCommandsOld : BaseCommandModule {
-
-        private readonly Randumb Random = Randumb.Instance;
-
-        sealed class MemeVoiceCommands : BaseCommandModule {
-            private MusicService Music { get; }
-            private GuildMusicData GuildMusic { get; set; }
-
-            public MemeVoiceCommands(MusicService music) {
-                this.Music = music;
-            }
-
-            public override async Task BeforeExecutionAsync(CommandContext ctx) {
-                this.GuildMusic = await Music.GetDataAsync(ctx.Guild);
-                if (this.GuildMusic != null && GuildMusic.IsPlaying && !this.GuildMusic.IsMeme) {
-                    throw new CommandCancelledException();
-                }
-                var vs = ctx.Member.VoiceState;
-                var chn = vs?.Channel;
-                if (chn == null) {
-                    await ctx.RespondAsync($"You need to be in a voice channel. (Debug Message)");
-                    throw new CommandCancelledException();
-                }
-
-                var mbr = ctx.Guild.CurrentMember?.VoiceState?.Channel;
-                if (mbr != null && chn != mbr) {
-                    await ctx.RespondAsync($"You need to be in the same voice channel. (Debug Message)");
-                    throw new CommandCancelledException();
-                }
-
-                this.GuildMusic = await this.Music.GetOrCreateDataAsync(ctx.Guild);
-
-                await base.BeforeExecutionAsync(ctx);
-            }
-
-            //A few hacky workarounds to get the music player to play memes, but it's better than nothing.
-            [Command("granddad"), Description("FLEENSTONES!?"), Category(Category.Meme)]
-            async Task GrandDad(CommandContext ctx, [HiddenParam] FlagArgs flags = new FlagArgs()) {
-                var reboot = flags.ParseBool("reboot") ?? false;
-                var trackLoad = await Music.GetTracksFromFileAsync(new FileInfo(Directory.GetFiles($"Resource/Files/sound/granddad{(reboot ? "/reboot" : "")}").RandomElement()));
-                var tracks = trackLoad.Tracks;
-                foreach (var track in tracks)
-                    this.GuildMusic.Enqueue(new MusicItem(track, ctx.Member));
-
-                var vs = ctx.Member.VoiceState;
-                var chn = vs.Channel;
-                await this.GuildMusic.CreateMemeAsync(chn);
-                await this.GuildMusic.PlayAsync();
-            }
-
-            [Command("jontron"), Description("Ech ~Jontron"), Category(Category.Meme)]
-            async Task Jontron(CommandContext ctx, [HiddenParam] FlagArgs flags = new FlagArgs()) {
-                var reboot = flags.ParseBool("reboot") ?? false;
-                var trackLoad = await Music.GetTracksFromFileAsync(new FileInfo(Directory.GetFiles($"Resource/Files/sound/jontron{(reboot ? "/reboot" : "")}").RandomElement()));
-                var tracks = trackLoad.Tracks;
-                foreach (var track in tracks)
-                    this.GuildMusic.Enqueue(new MusicItem(track, ctx.Member));
-
-                var vs = ctx.Member.VoiceState;
-                var chn = vs.Channel;
-                await this.GuildMusic.CreateMemeAsync(chn);
-                await this.GuildMusic.PlayAsync();
-            }
-
-            [Command("gabe"), Description("\"Bork!\" ~Gabe 2k17 <3"), Aliases("bork"), Category(Category.Meme)]
-            async Task Gabe(CommandContext ctx, [HiddenParam] FlagArgs flags = new FlagArgs()) {
-                var reboot = flags.ParseBool("reboot") ?? false;
-                var trackLoad = await Music.GetTracksFromFileAsync(new FileInfo(Directory.GetFiles($"Resource/Files/sound/gabe{(reboot ? "/reboot" : "")}").RandomElement()));
-                var tracks = trackLoad.Tracks;
-                foreach (var track in tracks)
-                    this.GuildMusic.Enqueue(new MusicItem(track, ctx.Member));
-
-                var vs = ctx.Member.VoiceState;
-                var chn = vs.Channel;
-                await this.GuildMusic.CreateMemeAsync(chn);
-                await this.GuildMusic.PlayAsync();
-            }
-        }
-
-        private async Task<Uri?> HuntForImage(CommandContext ctx) {
-            var messages = await ctx.Channel.GetMessagesAsync();
-            foreach (var message in messages) {
-                //Let's check attachments first.
-                if (message.Attachments.Count > 0) {
-                    var attach = message.Attachments[0];
-                    //Check if actually an image
-                    if (attach.IsImage()) {
-                        return new Uri(attach.Url);
-                    }
-                    //No attachments :(
-                } else {
-                    //Next, we're checking embeds.
-                    if (message.Embeds.Count > 0) {
-                        var embed = message.Embeds[0];
-                        //Embeds can have two image fields. The image, and thumbnail fields. We're checking the image field first.
-                        if (embed.Image != null) return embed.Image.Url.ToUri();
-                        //There was no image. Maybe there's a thumbnail we can use?
-                        if (embed.Thumbnail != null) return embed.Thumbnail.Url.ToUri();
-                    }
-                    //There weren't any embeds. Last resort. Let's see if there's a URL we can use.
-                    var contents = message.Content;
-                    Uri? uri = await Util.ConvertArgAsync<Uri>(contents, ctx);
-                    if (uri != null) return uri;
-                }
-            }
-            return null;
-        }
-
-        private string PrepText(string text) {
-            var charLimit = 12;
-            var sb = new StringBuilder();
-            var split = text.Split(" ");
-            for (var i = 0; i < split.Length; i++) {
-                if (split[i].Length > charLimit) {
-                    for (var ii = 0; ii < split[i].Length; ii += charLimit) sb.Append(split[i].Substring(ii, Math.Min(charLimit, split[i].Length - ii)) + " ");
-                } else sb.Append(split[i] + " ");
-            }
-            return sb.ToString();
-        }
     }
 }
