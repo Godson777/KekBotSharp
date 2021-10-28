@@ -159,7 +159,7 @@ namespace KekBot {
             });
             slash.RegisterCommands<PingCommand>(testGuildId);
 
-            if (config.WeebToken == null) {
+            if (config.WeebToken == null || config.WeebToken == "weebToken") {
                 Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] NOT registering weeb commands because no token was found >:(", DateTime.Now);
             } else {
                 Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] Initializing weeb commands", DateTime.Now);

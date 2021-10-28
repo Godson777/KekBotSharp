@@ -23,6 +23,12 @@ namespace KekBot {
         static async Task MainAsync(string[] _) {
             Console.WriteLine("KekBot is starting...");
             Console.WriteLine("[1/3] Loading Config...");
+            if (!await Config.Exists()) {
+                Console.WriteLine("[Config] No Config file found! Generating blank one...");
+                var TempConfig = await Config.CreateDefault();
+                TempConfig.Save();
+                Util.Panic("[Config] Blank Config generated! Please edit it and fill in your information.");
+            }
             var config = await Config.Get();
 
             Console.WriteLine("[2/3] Connecting to RethinkDB...");
