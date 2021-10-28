@@ -92,25 +92,44 @@ namespace KekBot.Commands {
             return null;
         }
 
-        static async Task<MagickImage?> GetImageArg(InteractionContext ctx, string? uriString)
+        /// <summary>
+        /// Handles an image URI argument. Tries to download the image if it's a valid URI pointing
+        /// to a valid image. If it's null and you gave a context, tries to hunt for an image.
+        /// </summary>
+        /// <param name="ctxForHunt">If given, previous messages may be searched for an image.</param>
+        /// <param name="uriString">The image arg.</param>
+        /// <returns>An image or null.</returns>
+        private static async Task<MagickImage?> GetImageArg(InteractionContext? ctxForHunt, string? uriString)
         {
-            Uri? uri;
-            
-            // Check if an image URI was given
-            if (uriString != null)
-                uri = new Uri(uriString);
-            // Slash commands don't support attachments yet
-            // else if (ctx.Attachments.Count > 0)
-            //     uri = new Uri(ctx.Interaction.Attachments[0].Url);
-            // Search previous messages for images
-            else
-                uri = await HuntForImage(ctx);
+            try
+            {
+                Uri? uri;
 
-            if (uri == null) return null;
-            
-            using var client = new WebClient();
-            await using var imgStream = await client.OpenReadTaskAsync(uri);
-            return new MagickImage(imgStream);
+                // Check if an image URI was given
+                if (uriString != null)
+                    uri = new Uri(uriString);
+                // Slash commands don't support attachments yet
+                // else if (ctx.Interaction.Attachments.Count > 0)
+                //     uri = new Uri(ctx.Interaction.Attachments[0].Url);
+                // Search previous messages for images
+                else if (ctxForHunt != null)
+                    uri = await HuntForImage(ctxForHunt);
+                // Do nothing because the arg is plain text
+                else
+                    uri = null;
+
+                if (uri == null) return null;
+
+                using var client = new WebClient();
+                await using var imgStream = await client.OpenReadTaskAsync(uri);
+                return new MagickImage(imgStream);
+            }
+            catch (Exception e) when (e is WebException ||
+                                      e is MagickException ||
+                                      e is FormatException)
+            {
+                return null;
+            }
         }
         
         /// <summary>
@@ -510,17 +529,10 @@ namespace KekBot.Commands {
 
             static async Task<MagickImage?> TryFetchImage(string? uriStr)
             {
-                if (!Util.TryParseUri(uriStr, out var uri)) return null;
-
-                using var client = new WebClient();
-                await using var stream = await client.OpenReadTaskAsync(uri);
-#pragma warning disable CA2000
-                // I can't dispose of this yet, I use it later!
-                var image = new MagickImage(stream)
-                {
-                    BackgroundColor = MagickColors.Transparent
-                };
-#pragma warning restore CA2000
+                var image = await GetImageArg(null, uriStr);
+                if (image == null) return null;
+                
+                image.BackgroundColor = MagickColors.Transparent;
                 image.Resize(270, 360);
                 image.Extent(270, 360, Gravity.Center);
                 return image;
