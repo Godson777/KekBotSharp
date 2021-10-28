@@ -1108,7 +1108,7 @@ namespace KekBot.Commands {
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddFile("urgent.png", output));
         }
         
-        sealed class VoiceCommands : ApplicationCommandModule
+        internal sealed class VoiceCommands : ApplicationCommandModule
         {
             public MusicService Music { private get; set; }
             public GuildMusicData? GuildMusic { private get; set; }

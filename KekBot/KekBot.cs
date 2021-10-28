@@ -175,6 +175,7 @@ namespace KekBot {
             };
             slash.RegisterCommands<PingCommand>(testGuildId);
             slash.RegisterCommands<MemeCommands>(testGuildId);
+            slash.RegisterCommands<MemeCommands.VoiceCommands>(testGuildId);
 
             if (config.WeebToken == null) {
                 Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] NOT registering weeb commands because no token was found >:(", DateTime.Now);
