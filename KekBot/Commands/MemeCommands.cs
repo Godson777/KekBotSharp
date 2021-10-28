@@ -113,15 +113,30 @@ namespace KekBot.Commands {
             return new MagickImage(imgStream);
         }
         
-        // todo: figure out what this does
-        private static string PrepText(string text) {
-            var charLimit = 12;
-            var sb = new StringBuilder();
-            var split = text.Split(" ");
-            for (var i = 0; i < split.Length; i++) {
-                if (split[i].Length > charLimit) {
-                    for (var ii = 0; ii < split[i].Length; ii += charLimit) sb.Append(split[i].Substring(ii, Math.Min(charLimit, split[i].Length - ii)) + " ");
-                } else sb.Append(split[i] + " ");
+        /// <summary>
+        /// Breaks up long words by inserting a space into them.
+        /// </summary>
+        private static string BreakLongWords(string text)
+        {
+            const int longWordLen = 12;
+            var sb = new StringBuilder(text.Length);
+            foreach (var word in text.Split(' '))
+            {
+                if (word.Length > longWordLen)
+                {
+                    for (var i = 0; i < word.Length; i += longWordLen)
+                    {
+                        sb
+                            .Append(word.Substring(i, Math.Min(longWordLen, word.Length - i)))
+                            .Append(' ');
+                    }
+                }
+                else
+                {
+                    sb
+                        .Append(word)
+                        .Append(' ');
+                }
             }
             return sb.ToString();
         }
@@ -238,7 +253,7 @@ namespace KekBot.Commands {
                 };
 
                 using var image =
-                    new MagickImage($"caption:{PrepText(text).Replace("\\", "\\\\")}",
+                    new MagickImage($"caption:{BreakLongWords(text).Replace("\\", "\\\\")}",
                         textSettings);
 
                 await Base(ctx, image);
@@ -595,7 +610,7 @@ namespace KekBot.Commands {
                     Height = 360
                 };
 
-                using var text = new MagickImage($"caption:{PrepText(str).Replace("\\", "\\\\")}",
+                using var text = new MagickImage($"caption:{BreakLongWords(str).Replace("\\", "\\\\")}",
                     textSettings);
 
                 template.Composite(text, x, y, CompositeOperator.SrcOver);
@@ -684,7 +699,7 @@ namespace KekBot.Commands {
                     Height = 379
                 };
 
-                using var image = new MagickImage($"caption:{PrepText(text).Replace("\\", "\\\\")}",
+                using var image = new MagickImage($"caption:{BreakLongWords(text).Replace("\\", "\\\\")}",
                     textSettings);
 
                 await Base(ctx, image, reboot);

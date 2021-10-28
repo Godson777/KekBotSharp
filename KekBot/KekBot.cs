@@ -161,8 +161,8 @@ namespace KekBot {
                 Console.WriteLine("Slash command error.");
                 var e = args.Exception;
                 Console.WriteLine(e);
-                var errMsg = $"Command failed: {e.Message}";
                 var ctx = args.Context;
+                var errMsg = $"Command '{ctx.CommandName}' failed: {e.Message}";
                 try
                 {
                     await ctx.FollowUpAsync(
