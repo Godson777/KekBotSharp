@@ -2,6 +2,7 @@
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.Interactivity;
+using DSharpPlus.SlashCommands;
 using RethinkDb.Driver.Model;
 using System;
 using System.Collections.Generic;
@@ -60,6 +61,17 @@ namespace KekBot.Menu {
             await Paginate(message, 1);
         }
 
+        /// <summary>
+        /// Displays the menu.<para/>
+        /// Be sure to call <see cref="CommandExtensions.SendThinking(InteractionContext)"/> before using this method.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <returns></returns>
+        public async Task Display(InteractionContext ctx) {
+            DisplayChecks();
+            await Paginate(ctx, 1);
+        }
+
         private protected override void DisplayChecks() {
             if (Users.Count == 0 && Roles.Count == 0) throw new MenuFailedException();
             if (Strings.Count == 0) throw new MenuFailedException();
@@ -75,6 +87,20 @@ namespace KekBot.Menu {
                 new DiscordMessageBuilder()
                 .WithContent(Text?.Invoke(pageNum, Pages))
                 .WithEmbed(msg)
+                .AddComponents(GetButtonList())), pageNum);
+            //await Initialize(await channel.SendMessageAsync(content: Text?.Invoke(pageNum, Pages), embed: msg), pageNum);
+        }
+
+        private async Task Paginate(InteractionContext ctx, int pageNum) {
+            if (pageNum < 1)
+                pageNum = 1;
+            else if (pageNum > Pages)
+                pageNum = Pages;
+            var msg = RenderPage(pageNum);
+            await Pagination(await ctx.FollowUpAsync(
+                new DiscordFollowupMessageBuilder()
+                .WithContent(Text?.Invoke(pageNum, Pages))
+                .AddEmbed(msg)
                 .AddComponents(GetButtonList())), pageNum);
             //await Initialize(await channel.SendMessageAsync(content: Text?.Invoke(pageNum, Pages), embed: msg), pageNum);
         }

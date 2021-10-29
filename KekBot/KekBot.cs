@@ -146,7 +146,7 @@ namespace KekBot {
 
             CommandsNext.RegisterCommands<OwnerCommands>();
             CommandsNext.RegisterCommands<HelpCommand>();
-            CommandsNext.RegisterCommands<FunCommands>();
+            CommandsNext.RegisterCommands<FunCommandsOld>();
             
             // Put your guild ID here if you wanna test
             ulong? testGuildId = 283100276125073409;
@@ -178,6 +178,7 @@ namespace KekBot {
             slash.RegisterCommands<PingCommand>(testGuildId);
             slash.RegisterCommands<MemeCommands>(testGuildId);
             slash.RegisterCommands<MemeCommands.VoiceCommands>(testGuildId);
+            slash.RegisterCommands<FunCommands>(testGuildId);
 
             if (config.WeebToken == null) {
                 Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] NOT registering weeb commands because no token was found >:(", DateTime.Now);
