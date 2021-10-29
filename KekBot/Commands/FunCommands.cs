@@ -17,16 +17,85 @@ using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
 using KekBot.Arguments;
 using KekBot.Attributes;
+using KekBot.Lib;
 using KekBot.Menu;
 using KekBot.Services;
 using KekBot.Utils;
 using RethinkDb.Driver.Model;
+using static KekBot.Utils.Constants;
 
 namespace KekBot.Commands {
     public class FunCommands : ApplicationCommandModule {
-        private static readonly string NoQuotesError = "You have no quotes!";
+        private static readonly string[] EightBall =
+        {
+            "It is certain.",
+            "It is decidedly so.",
+            "Yes, definitely.",
+            "You may rely on it.",
+            "As I see it, yes.",
+            "Most likely.",
+            "Outlook good.",
+            "Yes.",
+            "Signs point to yes.",
+            "Reply hazy, try again.",
+            "Ask again later.",
+            "Better not tell you now.",
+            "Cannot predict now.",
+            "Concentrate and ask again.",
+            "Don't count on it.",
+            "My reply is no.",
+            "My sources say no.",
+            "Outlook not so good.",
+            "Very doubtful."
+        };
+
+        private readonly Randumb Rng = Randumb.Instance;
+        
+        [SlashCommand("8ball", "Ask the magic 8-ball a question!"), Category(Category.Fun)]
+        async Task EightBallCommand(InteractionContext ctx,
+            [Option("question", "The question to ask to the magic 8-ball.")] string question)
+        {
+            var emote = await CustomEmote.Get();
+            await ctx.ReplyBasicAsync(
+                $"{emote.Think} You asked: {question}\n\n🎱 8-Ball's response: {EightBall.RandomElement(Rng)}");
+        }
+
+        [SlashCommand("avatar", "Sends a larger version of the specified user's avatar.")]
+        [Category(Category.Fun)]
+        async Task AvatarCommand(InteractionContext ctx,
+            [Option("user", "The user to pull the avatar from. (Returns yours if not specified.)")]
+            DiscordUser? user = null,
+            [Option(AvatarArgName, AvatarArgDescription)]
+            AvatarPreference avaPref = default) =>
+            await ctx.ReplyBasicAsync(
+                await ((DiscordMember?)user ?? ctx.Member).AvatarUrlChecked(avaPref));
+        
+        [SlashCommand("flip", "Flips a coin."), Category(Category.Fun)]
+        async Task FlipCommand(InteractionContext ctx)
+        {
+            var coin = Rng.OneOf("HEADS", "TAILS");
+            await ctx.ReplyBasicAsync(
+                $"{ctx.User.Mention} flipped the coin and it landed on... ***{coin}!***");
+        }
+        
+        [SlashCommand("pick", "Has KekBot pick one of X choices for you."), Category(Category.Fun)]
+        async Task PickCommand(
+            InteractionContext ctx,
+            [Option("choices", "Options separated with vertical bars, commas, or just spaces (for single-word choices).")]
+            string choices
+        ) {
+            var choicesArray = ChoicesList.Parse(choices).Choices;
+            await ctx.ReplyBasicAsync(choicesArray.Length switch {
+                0 => "You haven't given me any choices, though...",
+                1 => $"Well, I guess I'm choosing `{choicesArray.Single()}`, since you haven't given me anything else to pick...",
+                _ => $"Hm... I think I'll go with `{choicesArray.RandomElement(Rng)}`.",
+            });
+        }
+        
         [SlashCommandGroup("quote", "Add, List, Remove, or Get quotes from a list of quotes made in your server or channel.")]
         sealed class QuoteCommand : ApplicationCommandModule {
+            private static readonly string NoQuotesError = "You have no quotes!";
+            
             [SlashCommand("get", "Grabs a random quote from the list.")]
             async Task Get(InteractionContext ctx, [Option("quote_id", "A specific quote you want to get.")] long QuoteNumber = 0) {
                 var set = await Settings.Get(ctx.Guild);
