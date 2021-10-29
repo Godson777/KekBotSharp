@@ -149,11 +149,13 @@ namespace KekBot {
             CommandsNext.RegisterCommands<FunCommands>();
             
             // Put your guild ID here if you wanna test
-            ulong? testGuildId = 233647821784350722;
+            ulong? testGuildId = 283100276125073409;
             var slash = Discord.UseSlashCommands(new SlashCommandsConfiguration()
             {
                 Services = new ServiceCollection()
                     .AddSingleton(new WeebCommandsBase(Name, Version, config.WeebToken))
+                    .AddSingleton<MusicService>()
+                    .AddSingleton(new LavalinkService(this.Discord))
                     .BuildServiceProvider()
             });
             slash.SlashCommandErrored += async (sender, args) =>
