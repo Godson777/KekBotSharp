@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
+using KekBot.Commands;
 
 namespace KekBot.Utils {
     static class Util {
@@ -104,6 +108,50 @@ namespace KekBot.Utils {
         /// </summary>
         internal static int FastIndexOfEnd(this string s, string value, int startIndex = 0) =>
             s.IndexOfEnd(value, startIndex, StringComparison.Ordinal);
+
+        /// <summary>
+        /// Tries to parse the string as a Uri.
+        /// </summary>
+        /// <param name="s">String to parse.</param>
+        /// <param name="uri">Parsed Uri value on success. Null on failure.</param>
+        /// <returns>Whether the conversion succeeded.</returns>
+        internal static bool TryParseUri(string? s, [MaybeNullWhen(false)] out Uri uri)
+        {
+            try
+            {
+                uri = new Uri(s!); // it throws on null
+                return true;
+            }
+            catch (ArgumentNullException)
+            {
+            }
+            catch (FormatException)
+            {
+            }
+
+            uri = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Wait for the tasks in parallel. If any fail, throws the first exception.
+        /// </summary>
+        /// <remarks>
+        /// If you need more/less than 3, add an overload. I wish C# had this build in.
+        /// </remarks>
+        internal static async Task<(T, T, T)> AllTasks<T>(Task<T> t1, Task<T> t2, Task<T> t3)
+        {
+            T[] a;
+            try
+            {
+                a = await Task.WhenAll(t1, t2, t3);
+            }
+            catch (AggregateException e)
+            {
+                throw e.InnerExceptions.First();
+            }
+            return (a[0], a[1], a[2]);
+        }
 
         internal static string GetName(this DiscordUser user) =>
             user is DiscordMember m ? m.DisplayName : user.Username;
@@ -224,5 +272,39 @@ namespace KekBot.Utils {
             return a.Width > 0 && a.Height > 0;
         }
 
+        /// <summary>
+        /// Opens a readable stream containing the member's avatar.
+        /// </summary>
+        /// <returns></returns>
+        public static async Task<Stream?> OpenReadAvatarAsync(this DiscordMember m,
+            AvatarPreference preference,
+            WebClient? withClient = null)
+        {
+            using var client = withClient ?? new WebClient();
+
+            if (preference == AvatarPreference.Guild)
+            {
+                try
+                {
+                    return await client.OpenReadTaskAsync(m.GuildAvatarUrl);
+                }
+                catch (WebException)
+                { }
+            }
+            else
+            {
+                Assert(preference == AvatarPreference.Global,
+                    $"unknown {nameof(AvatarPreference)}: '{preference}'");
+            }
+
+            try
+            {
+                return await client.OpenReadTaskAsync(m.AvatarUrl);
+            }
+            catch (WebException)
+            { }
+
+            return null;
+        }
     }
 }

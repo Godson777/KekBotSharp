@@ -147,17 +147,35 @@ namespace KekBot {
             CommandsNext.RegisterCommands<OwnerCommands>();
             CommandsNext.RegisterCommands<HelpCommand>();
             CommandsNext.RegisterCommands<FunCommands>();
-            CommandsNext.RegisterCommands<MemeCommands>();
             
             // Put your guild ID here if you wanna test
-            ulong? testGuildId = null;
+            ulong? testGuildId = 233647821784350722;
             var slash = Discord.UseSlashCommands(new SlashCommandsConfiguration()
             {
                 Services = new ServiceCollection()
                     .AddSingleton(new WeebCommandsBase(Name, Version, config.WeebToken))
                     .BuildServiceProvider()
             });
+            slash.SlashCommandErrored += async (sender, args) =>
+            {
+                Console.WriteLine("Slash command error.");
+                var e = args.Exception;
+                Console.WriteLine(e);
+                var ctx = args.Context;
+                var errMsg = $"Command '{ctx.CommandName}' failed: {e.Message}";
+                try
+                {
+                    await ctx.FollowUpAsync(
+                        new DiscordFollowupMessageBuilder().WithContent(errMsg));
+                }
+                catch (NotFoundException)
+                {
+                    await ctx.Channel.SendMessageAsync(errMsg);
+                }
+            };
             slash.RegisterCommands<PingCommand>(testGuildId);
+            slash.RegisterCommands<MemeCommands>(testGuildId);
+            slash.RegisterCommands<MemeCommands.VoiceCommands>(testGuildId);
 
             if (config.WeebToken == null) {
                 Discord.Logger.Log(LogLevel.Information, $"[{LOGTAG}-{ShardID}] NOT registering weeb commands because no token was found >:(", DateTime.Now);
