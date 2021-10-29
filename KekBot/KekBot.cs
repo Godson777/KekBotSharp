@@ -146,6 +146,7 @@ namespace KekBot {
 
             CommandsNext.RegisterCommands<OwnerCommands>();
             CommandsNext.RegisterCommands<HelpCommand>();
+            CommandsNext.RegisterCommands<MusicCommands>();
             CommandsNext.RegisterCommands<FunCommandsOld>();
             
             // Put your guild ID here if you wanna test
