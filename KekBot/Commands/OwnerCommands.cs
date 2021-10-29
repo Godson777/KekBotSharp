@@ -8,7 +8,15 @@ using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
 namespace KekBot.Commands {
+
     public class OwnerCommands : BaseCommandModule {
+        /// <summary>
+        /// Was mostly made as a proof of concept, will most likely not remain in final build.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="member"></param>
+        /// <param name="command"></param>
+        /// <returns></returns>
         [Command("sudo"), Description("Forces a command to be run as someone else."), RequireOwner, Aliases("s", "sud", "sudoooooooo")]
         [Priority(0)]
         async Task SudoCommand(CommandContext ctx, [Description("User to run the command as.")] DiscordMember member, [RemainingText, Description("The command to run (and its arguments)")] string command) {
