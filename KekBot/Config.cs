@@ -37,7 +37,6 @@ namespace KekBot {
             blank.DbPass = "database password";
             blank.Shards = 2;
             blank.RankedUsers = new Dictionary<ulong, Rank>();
-            blank.WeebToken = "weebToken";
             return blank;
         }
 
