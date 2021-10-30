@@ -21,11 +21,13 @@ using KekBot.Menu;
 using KekBot.Services;
 using KekBot.Utils;
 using RethinkDb.Driver.Model;
+using SimMetricsApi;
+using SimMetricsMetricUtilities;
 using static KekBot.Utils.Constants;
 
 namespace KekBot.Commands {
     public class FunCommands : ApplicationCommandModule {
-        private static readonly string[] EightBall =
+        private static readonly string[] EightBallRandom =
         {
             "It is certain.",
             "It is decidedly so.",
@@ -48,15 +50,49 @@ namespace KekBot.Commands {
             "Very doubtful."
         };
 
+        private class EightBallPreset
+        {
+            public readonly string Q;
+            public readonly string A;
+            /// Question length scaled down a bit for a nice value to compare against
+            public readonly int QLenScaled;
+
+            public EightBallPreset(string q, string a)
+            {
+                Q = q;
+                A = a;
+                QLenScaled = q.Length * 8 / 10;
+            }
+        }
+
+        private static readonly EightBallPreset[] EightBallPresets = {
+            new EightBallPreset("how many licks does it take to get to the center", "The world may never know."),
+            new EightBallPreset("did jeffery epstein kill himself", "No."),
+            new EightBallPreset("the answer to life, the universe, and everything", "42."),
+            new EightBallPreset("¿Que?", "Sì."),
+            new EightBallPreset("Nani?", "はい。"),
+            new EightBallPreset("何？", "はい。"),
+            new EightBallPreset("なに？", "はい。"),
+        };
+
         private readonly Randumb Rng = Randumb.Instance;
+        private readonly IStringMetric StringMetric = new SmithWatermanGotoh();
         
         [SlashCommand("8ball", "Ask the magic 8-ball a question!"), Category(Category.Fun)]
         async Task EightBallCommand(InteractionContext ctx,
             [Option("question", "The question to ask to the magic 8-ball.")] string question)
         {
+            var presetAnswer = EightBallPresets
+                .FirstOrDefault(preset =>
+                    StringMetric.GetSimilarity(question, preset.Q) >= 0.5 &&
+                    question.Length >= preset.QLenScaled)
+                ?.A;
+
+            var answer = presetAnswer ?? EightBallRandom.RandomElement(Rng);
+
             var emote = await CustomEmote.Get();
             await ctx.ReplyBasicAsync(
-                $"{emote.Think} You asked: {question}\n\n🎱 8-Ball's response: {EightBall.RandomElement(Rng)}");
+                $"{emote.Think} You asked: {question}\n\n🎱 8-Ball's response: {answer}");
         }
 
         [SlashCommand("avatar", "Sends a larger version of the specified user's avatar.")]
