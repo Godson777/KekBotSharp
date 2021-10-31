@@ -1,34 +1,18 @@
 ﻿using ImageMagick;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using DSharpPlus.CommandsNext;
-using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using KekBot.Attributes;
 using KekBot.Utils;
-using KekBot.Arguments;
-using DSharpPlus;
 using System.Text;
-using System.Runtime.CompilerServices;
-using System.Linq;
-using System.Net.Mime;
-using DSharpPlus.Lavalink;
 using DSharpPlus.SlashCommands;
 using KekBot.Lib;
 using Microsoft.Extensions.Logging;
+using static KekBot.Utils.Constants;
 
 namespace KekBot.Commands {
-    public enum AvatarPreference
-    {
-        [ChoiceName("prefer server avatar")]
-        Guild = 0, // default
-        [ChoiceName("use global avatar")]
-        Global,
-    }
-    
     class MemeCommands : ApplicationCommandModule
     {
 
@@ -37,18 +21,13 @@ namespace KekBot.Commands {
 
         private const string UserArgRequiredDescription = "The user to target for the image.";
 
-        private const string AvatarArgName = "avatar-preference";
-        private const string AvatarArgDescription =
-            "Whether to use their avatar on this server (the default), or their global one.";
-
         private const string ImageArgDescription =
             "An image link. If none given, KekBot will search message history for an image to use.";
         
         private const string RebootArgName = "show-reboot";
         private const string RebootArgDescription =
             "Show the alternate image from one of the \"reboot\" events.";
-
-        private const string AvatarFailed = "Error while loading avatar.";
+        
         private const string ImageNotFound = "No image found.";
 
         private readonly Randumb Random = Randumb.Instance;

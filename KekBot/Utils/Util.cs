@@ -4,12 +4,14 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using KekBot.Commands;
+using KekBot.Lib;
 
 namespace KekBot.Utils {
     static class Util {
@@ -272,39 +274,124 @@ namespace KekBot.Utils {
             return a.Width > 0 && a.Height > 0;
         }
 
+        private static readonly HttpClient HttpClient = new HttpClient();
+
+        /// <summary>
+        /// Checks if the given address exists.
+        /// </summary>
+        /// <remarks>
+        /// Sends a HEAD request. This is faster than GET since it doesn't have
+        /// to download the body of the page.
+        /// </remarks>
+        /// <returns>Whether the web page exists.</returns>
+        private static async Task<bool> WebPageExists(string address)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Head, address);
+            return (await HttpClient.SendAsync(request)).IsSuccessStatusCode;
+        }
+
+        /// <summary>
+        /// Gets the member's avatar URL.
+        /// </summary>
+        /// <param name="m">The member</param>
+        /// <param name="preference">Which avatar to get</param>
+        /// <returns>The URL (it's probably valid to turn into a <see cref="Uri"/>)</returns>
+        public static string AvatarUrl(this DiscordMember m,
+            AvatarPreference preference) =>
+            preference == AvatarPreference.Guild
+                ? m.GuildAvatarUrl
+                : m.AvatarUrl;
+
+        /// <summary>
+        /// Gets the member's avatar URL. If <paramref name="preference"/> is guild, checks whether
+        /// they have one (with a web request), and if not, returns their global one instead.
+        /// </summary>
+        /// <param name="m">The member</param>
+        /// <param name="preference">Which avatar to get</param>
+        /// <returns>The URL (it's probably valid to turn into a <see cref="Uri"/>)</returns>
+        public static async Task<string> AvatarUrlChecked(this DiscordMember m,
+            AvatarPreference preference) =>
+            preference == AvatarPreference.Guild && await WebPageExists(m.GuildAvatarUrl)
+                ? m.GuildAvatarUrl
+                : m.AvatarUrl;
+
         /// <summary>
         /// Opens a readable stream containing the member's avatar.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A stream or null if it couldn't load</returns>
         public static async Task<Stream?> OpenReadAvatarAsync(this DiscordMember m,
             AvatarPreference preference,
             WebClient? withClient = null)
         {
             using var client = withClient ?? new WebClient();
 
-            if (preference == AvatarPreference.Guild)
-            {
-                try
-                {
-                    return await client.OpenReadTaskAsync(m.GuildAvatarUrl);
-                }
-                catch (WebException)
-                { }
-            }
-            else
-            {
-                Assert(preference == AvatarPreference.Global,
-                    $"unknown {nameof(AvatarPreference)}: '{preference}'");
-            }
+            return
+                await client.OpenReadTaskAsync(m.AvatarUrl(preference))
+                    .Ext().Catch<WebException>() ??
+                // Server avatars seem a little wonky, so try global before giving up.
+                await client.OpenReadTaskAsync(m.AvatarUrl)
+                    .Ext().Catch<WebException>();
+        }
 
+        /// <summary>
+        /// Wrap in a type with useful methods. See <see cref="TaskExt{TResult}"/>
+        /// </summary>
+        /// <param name="task">The task to use</param>
+        /// <typeparam name="TResult">The success type</typeparam>
+        /// <returns>A temporary value</returns>
+        internal static TaskExt<TResult> Ext<TResult>(this Task<TResult> task)
+            where TResult : class =>
+            new TaskExt<TResult>(task);
+    }
+
+    /// <summary>
+    /// A wrapper around a <see cref="Task{TResult}"/> that provides useful methods.
+    /// </summary>
+    /// <remarks>
+    /// They <em>could</em> be extension methods, but if you specify a type param,
+    /// you have to specify <em>every</em> type param, which is annoying.
+    /// </remarks>
+    /// <typeparam name="TResult">The success type</typeparam>
+    internal readonly struct TaskExt<TResult> where TResult : class
+    {
+        private readonly Task<TResult> Task;
+
+        public TaskExt(Task<TResult> task) => Task = task;
+
+        /// <summary>
+        /// On failure, catch the given exception and return null.
+        /// </summary>
+        /// <typeparam name="TException">The exception to catch</typeparam>
+        /// <returns>The success value or null</returns>
+        public async Task<TResult?> Catch<TException>()
+        {
             try
             {
-                return await client.OpenReadTaskAsync(m.AvatarUrl);
+                return await Task;
             }
-            catch (WebException)
-            { }
+            catch (Exception e) when (e is TException)
+            {
+                return null;
+            }
+        }
 
-            return null;
+        /// <summary>
+        /// Ignore the task's result and get whether it succeeds.
+        /// </summary>
+        /// <returns>True on success, false on failure</returns>
+        public async Task<bool> Succeeds()
+        {
+            try
+            {
+                await Task;
+                return true;
+            }
+#pragma warning disable CA1031
+            catch
+#pragma warning restore CA1031
+            {
+                return false;
+            }
         }
     }
 }
