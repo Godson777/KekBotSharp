@@ -76,6 +76,14 @@ namespace KekBot.Commands {
         };
 
         private readonly Randumb Rng = Randumb.Instance;
+        /// <summary>
+        /// Used for fuzzy matching.
+        /// </summary>
+        /// <remarks>
+        /// Smith-Waterman-Gotoh is used because it basically ignores extra characters on either
+        /// end, unlike, e.g., Levenshtein. That way, users who add some extra little
+        /// words/punctuation are more likely to have their inputs match.
+        /// </remarks>
         private readonly IStringMetric StringMetric = new SmithWatermanGotoh();
         
         [SlashCommand("8ball", "Ask the magic 8-ball a question!"), Category(Category.Fun)]
