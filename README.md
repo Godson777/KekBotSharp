@@ -9,6 +9,8 @@
 
 ~~KekBot also has a patreon, which you can check out here: https://www.patreon.com/KekBot~~
 
-THE FUTURE OF KEKBOT IS NOW, OLD MAN.
+This is a version of [KekBot](https://github.com/Godson777/KekBot) that was completely rewritten from the ground up in C#. The majority of KekBot's features were implemented, while others were either scrapped or hadn't begun development.
 
-[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=Godson777/KekBotSharp)](https://dependabot.com)
+At the moment, there are no plans to continue development for KekBot.
+
+If you wish to run KekBot in its current state on your machine, you will need [RethinkDB](https://rethinkdb.com/) set up and running for it to function properly.
